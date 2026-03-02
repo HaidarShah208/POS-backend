@@ -151,23 +151,24 @@ export async function getOrders(params: GetOrdersParams = {}): Promise<Paginated
     .createQueryBuilder("o")
     .leftJoinAndSelect("o.items", "items")
     .leftJoinAndSelect("o.branch", "branch")
-    .leftJoinAndSelect("o.user", "user")
-    .orderBy("o.created_at", "DESC");
+    .leftJoinAndSelect("o.user", "user");
 
   if (branchId) {
-    qb.andWhere("o.branch_id = :branchId", { branchId });
+    qb.andWhere("o.branchId = :branchId", { branchId });
   }
   if (status) {
     qb.andWhere("o.status = :status", { status });
   }
   if (dateFrom) {
-    qb.andWhere("o.created_at >= :dateFrom", { dateFrom });
+    qb.andWhere("o.createdAt >= :dateFrom", { dateFrom });
   }
   if (dateTo) {
-    qb.andWhere("o.created_at < :dateTo", { dateTo });
+    qb.andWhere("o.createdAt < :dateTo", { dateTo });
   }
 
-  const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+  qb.orderBy("o.createdAt", "DESC").skip(skip).take(limit);
+
+  const [data, total] = await qb.getManyAndCount();
 
   return {
     data,

@@ -4,7 +4,13 @@ export type OrderType = "dine-in" | "takeaway" | "delivery";
 
 export type PaymentMethod = "cash" | "card" | "mobile" | "other";
 
-export type OrderStatus = "pending" | "completed" | "cancelled";
+export type OrderStatus =
+  | "pending"
+  | "accepted"
+  | "preparing"
+  | "ready"
+  | "completed"
+  | "cancelled";
 
 export type KitchenOrderStatus = "NEW" | "PREPARING" | "READY";
 

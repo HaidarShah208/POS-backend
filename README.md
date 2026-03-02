@@ -54,7 +54,13 @@ Server runs at `http://localhost:4000`.
 - `GET /api/inventory/branch/:branchId` – list inventory for a branch (auth)
 - `POST /api/inventory/adjust` – adjust stock (admin; body: productId, branchId, type: "add"|"remove", quantity, reason)
 
-- `GET /api/orders/kitchen/:branchId` – kitchen orders (auth)
-- `POST /api/orders` – place order (auth, body: items, subtotal, tax, discount, grandTotal, orderType, paymentMethod)
+**Orders** (status flow: pending → accepted → preparing → ready → completed | cancelled):
+- `POST /api/orders` – create order (auth; body: items, orderType, paymentMethod, optional subtotal/tax/discount/grandTotal). Calculates totals, deducts inventory, assigns daily token number. Returns `{ orderId, tokenNumber }`.
+- `GET /api/orders` – list orders (auth; query: `page`, `limit`, `branchId`, `status`, `dateFrom`, `dateTo`; paginated).
+- `GET /api/orders/:id` – get order by id (auth).
+- `PATCH /api/orders/:id/status` – update order status (auth; body: `status`). Valid transitions: pending→accepted|cancelled, accepted→preparing|cancelled, preparing→ready|cancelled, ready→completed|cancelled.
+- `GET /api/orders/branch/:branchId` – list by branch (auth).
+- `GET /api/orders/kitchen/:branchId` – kitchen orders (auth).
+- `PATCH /api/orders/kitchen/status` – update kitchen status (auth; body: orderId, status).
 
 Protected routes use header: `Authorization: Bearer <token>`.

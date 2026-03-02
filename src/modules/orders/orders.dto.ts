@@ -43,25 +43,64 @@ export class PlaceOrderDto {
   @Type(() => OrderItemDto)
   items!: OrderItemDto[];
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  subtotal!: number;
+  subtotal?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  tax!: number;
+  tax?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  discount!: number;
+  discount?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  grandTotal!: number;
+  grandTotal?: number;
 
   @IsIn(["dine-in", "takeaway", "delivery"])
   orderType!: "dine-in" | "takeaway" | "delivery";
 
   @IsIn(["cash", "card", "mobile", "other"])
   paymentMethod!: "cash" | "card" | "mobile" | "other";
+}
+
+export class GetOrdersQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit?: number = 20;
+
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
+
+  @IsOptional()
+  @IsIn(["pending", "accepted", "preparing", "ready", "completed", "cancelled"])
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  dateFrom?: string; // YYYY-MM-DD
+
+  @IsOptional()
+  @IsString()
+  dateTo?: string; // YYYY-MM-DD
+}
+
+export class UpdateOrderStatusDto {
+  @IsIn(["pending", "accepted", "preparing", "ready", "completed", "cancelled"])
+  status!: string;
 }

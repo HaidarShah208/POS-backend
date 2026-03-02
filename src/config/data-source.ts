@@ -11,6 +11,7 @@ import { Orders1730050000000 } from "../database/migrations/1730050000000-orders
 import { OrderItems1730060000000 } from "../database/migrations/1730060000000-order-items.js";
 import { Inventory1730070000000 } from "../database/migrations/1730070000000-inventory.js";
 import { StockAdjustments1730080000000 } from "../database/migrations/1730080000000-stock-adjustments.js";
+import { OrdersTokenNumber1730090000000 } from "../database/migrations/1730090000000-orders-token-number.js";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -27,6 +28,7 @@ export const AppDataSource = new DataSource({
     OrderItems1730060000000,
     Inventory1730070000000,
     StockAdjustments1730080000000,
+    OrdersTokenNumber1730090000000,
   ],
   migrationsTableName: "migrations",
   subscribers: [],

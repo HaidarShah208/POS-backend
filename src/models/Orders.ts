@@ -48,8 +48,9 @@ export class Orders {
   @Column({ type: "varchar", length: 20, default: "pending" })
   status!: OrderStatus;
 
-  @Column({ type: "varchar", length: 20, unique: true })
-  token!: string;
+  /** Token number for display (per-branch daily increment, e.g. 20250302-001) */
+  @Column({ type: "varchar", length: 30, name: "token_number", unique: true })
+  tokenNumber!: string;
 
   @Column({ type: "varchar", length: 20, name: "kitchen_status", default: "NEW" })
   kitchenStatus!: string;

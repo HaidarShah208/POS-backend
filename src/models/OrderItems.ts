@@ -6,6 +6,7 @@ import {
   JoinColumn,
 } from "typeorm";
 import { Orders } from "./Orders.js";
+import { Products } from "./Products.js";
 
 @Entity("order_items")
 export class OrderItems {
@@ -36,4 +37,8 @@ export class OrderItems {
   @ManyToOne(() => Orders, (o) => o.items, { onDelete: "CASCADE" })
   @JoinColumn({ name: "order_id" })
   order!: Orders;
+
+  @ManyToOne(() => Products, { onDelete: "SET NULL" })
+  @JoinColumn({ name: "product_id" })
+  product!: Products | null;
 }

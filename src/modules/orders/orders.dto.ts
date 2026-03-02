@@ -71,7 +71,7 @@ export class PlaceOrderDto {
   orderType!: "dine-in" | "takeaway" | "delivery";
 
   @IsIn(["cash", "card", "mobile", "other"])
-  paymentMethod!: "cash" | "card" | "mobile" | "other";
+  paymentMethod!: "cash" | "card" | "mobile";
 }
 
 export class GetOrdersQueryDto {

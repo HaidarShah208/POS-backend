@@ -2,7 +2,7 @@ export type UserRole = "admin" | "manager" | "cashier" | "kitchen";
 
 export type OrderType = "dine-in" | "takeaway" | "delivery";
 
-export type PaymentMethod = "cash" | "card" | "mobile" | "other";
+export type PaymentMethod = "cash" | "card" | "mobile";
 
 export type OrderStatus =
   | "pending"

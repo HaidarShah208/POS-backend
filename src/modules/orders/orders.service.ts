@@ -5,9 +5,7 @@ import { Inventory } from "../../models/Inventory.js";
 import type { OrderType, PaymentMethod, OrderStatus } from "../../types/index.js";
 
 const orderRepo = () => AppDataSource.getRepository(Orders);
-const itemRepo = () => AppDataSource.getRepository(OrderItems);
-const inventoryRepo = () => AppDataSource.getRepository(Inventory);
-
+ 
 /** Calculate subtotal from items; optionally apply tax/discount to get grandTotal */
 function calculateTotals(items: { price: number; quantity: number; modifiers?: { price: number }[] }[]) {
   let subtotal = 0;

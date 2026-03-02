@@ -39,6 +39,8 @@ The app needs these **environment variables** set in your hosting dashboard (do 
 
 **Supabase:** Use the connection string from Project Settings → Database (URI, with your password). Use the **Connection pooling** URI if you use Supabase pooler.
 
+**IPv6 / ENETUNREACH on Railway:** The app resolves the DB host to IPv4 at startup when possible. If you still see `ENETUNREACH` to an IPv6 address, add in Railway Variables: `NODE_OPTIONS=--dns-result-order=ipv4first`, or switch to Supabase’s **Session mode** (pooler) connection string.
+
 ## Scripts
 
 - `npm run dev` – development with nodemon + tsx

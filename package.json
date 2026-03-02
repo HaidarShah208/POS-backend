@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --exec \"node --import tsx src/server.ts\"",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/bootstrap.js",
     "migration:generate": "typeorm migration:generate -d src/config/data-source.ts",
     "migration:run": "node --import tsx src/database/run-migrations.ts",
     "migration:revert": "typeorm migration:revert -d src/config/data-source.ts",

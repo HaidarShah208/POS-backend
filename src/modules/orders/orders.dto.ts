@@ -38,6 +38,10 @@ export class OrderItemDto {
 }
 
 export class PlaceOrderDto {
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)

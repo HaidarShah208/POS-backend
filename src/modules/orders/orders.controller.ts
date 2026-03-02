@@ -3,13 +3,17 @@ import * as ordersService from "./orders.service.js";
 import type { GetOrdersQueryDto } from "./orders.dto.js";
 
 export async function placeOrder(req: Request, res: Response): Promise<void> {
-  const branchId = req.user?.branchId ?? req.body.branchId;
+  const branchId = req.user?.branchId ?? req.body?.branchId;
   if (!branchId) {
-    res.status(400).json({ error: "branchId required" });
+    res.status(400).json({ error: "branchId required. Ensure you are logged in and your account has a branch, or send branchId in the request body." });
+    return;
+  }
+  const { items, subtotal, tax, discount, grandTotal, orderType, paymentMethod } = req.body;
+  if (!items?.length) {
+    res.status(400).json({ error: "items array is required and must not be empty" });
     return;
   }
   try {
-    const { items, subtotal, tax, discount, grandTotal, orderType, paymentMethod } = req.body;
     const result = await ordersService.placeOrder({
       branchId,
       userId: req.user?.sub,
@@ -23,11 +27,8 @@ export async function placeOrder(req: Request, res: Response): Promise<void> {
     });
     res.status(201).json(result);
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Order failed";
-    if (message.startsWith("Insufficient stock")) {
-      res.status(400).json({ error: message });
-      return;
-    }
+    const message =
+      (e instanceof Error ? e.message : null)?.trim() || "Order failed";
     res.status(400).json({ error: message });
   }
 }

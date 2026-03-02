@@ -6,9 +6,6 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { Inventory } from "./Inventory.js";
-import { Users } from "./Users.js";
-
 export type StockAdjustmentType = "add" | "remove";
 
 @Entity("stock_adjustments")
@@ -34,11 +31,11 @@ export class StockAdjustments {
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @ManyToOne(() => Inventory, (inv) => inv.adjustments, { onDelete: "CASCADE" })
+  @ManyToOne("Inventory", "adjustments", { onDelete: "CASCADE" })
   @JoinColumn({ name: "inventory_id" })
-  inventory!: Inventory;
+  inventory!: import("./Inventory.js").Inventory;
 
-  @ManyToOne(() => Users, { onDelete: "SET NULL", nullable: true })
+  @ManyToOne("Users", undefined, { onDelete: "SET NULL", nullable: true })
   @JoinColumn({ name: "created_by" })
-  createdBy!: Users | null;
+  createdBy!: import("./Users.js").Users | null;
 }

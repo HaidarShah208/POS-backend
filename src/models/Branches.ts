@@ -6,8 +6,6 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { Users } from "./Users.js";
-import { Orders } from "./Orders.js";
 
 @Entity("branches")
 export class Branches {
@@ -29,9 +27,9 @@ export class Branches {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @OneToMany(() => Users, (u) => u.branch)
-  users!: Users[];
+  @OneToMany("Users", "branch")
+  users!: import("./Users.js").Users[];
 
-  @OneToMany(() => Orders, (o) => o.branch)
-  orders!: Orders[];
+  @OneToMany("Orders", "branch")
+  orders!: import("./Orders.js").Orders[];
 }

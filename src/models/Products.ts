@@ -7,8 +7,6 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { Categories } from "./Categories.js";
-
 @Entity("products")
 export class Products {
   @PrimaryGeneratedColumn("uuid")
@@ -50,7 +48,7 @@ export class Products {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @ManyToOne(() => Categories, (c) => c.products, { onDelete: "CASCADE" })
+  @ManyToOne("Categories", "products", { onDelete: "CASCADE" })
   @JoinColumn({ name: "category_id" })
-  category!: Categories;
+  category!: import("./Categories.js").Categories;
 }

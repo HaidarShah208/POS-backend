@@ -11,7 +11,6 @@ import {
 import type { OrderType, PaymentMethod, OrderStatus } from "../types/index.js";
 import { Branches } from "./Branches.js";
 import { Users } from "./Users.js";
-import { OrderItems } from "./OrderItems.js";
 
 @Entity("orders")
 export class Orders {
@@ -61,14 +60,14 @@ export class Orders {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @ManyToOne(() => Branches, (b) => b.orders, { onDelete: "CASCADE" })
+  @ManyToOne("Branches", "orders", { onDelete: "CASCADE" })
   @JoinColumn({ name: "branch_id" })
   branch!: Branches;
 
-  @ManyToOne(() => Users, { onDelete: "SET NULL" })
+  @ManyToOne("Users", undefined, { onDelete: "SET NULL" })
   @JoinColumn({ name: "user_id" })
   user!: Users | null;
 
-  @OneToMany(() => OrderItems, (item) => item.order, { cascade: true })
-  items!: OrderItems[];
+  @OneToMany("OrderItems", "order", { cascade: true })
+  items!: import("./OrderItems.js").OrderItems[];
 }

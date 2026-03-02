@@ -6,7 +6,6 @@ import {
   JoinColumn,
 } from "typeorm";
 import { Orders } from "./Orders.js";
-import { Products } from "./Products.js";
 
 @Entity("order_items")
 export class OrderItems {
@@ -34,11 +33,11 @@ export class OrderItems {
   @Column({ type: "jsonb", nullable: true })
   modifiers!: { id: string; name: string; price: number }[] | null;
 
-  @ManyToOne(() => Orders, (o) => o.items, { onDelete: "CASCADE" })
+  @ManyToOne("Orders", "items", { onDelete: "CASCADE" })
   @JoinColumn({ name: "order_id" })
   order!: Orders;
 
-  @ManyToOne(() => Products, { onDelete: "SET NULL" })
+  @ManyToOne("Products", undefined, { onDelete: "SET NULL" })
   @JoinColumn({ name: "product_id" })
-  product!: Products | null;
+  product!: import("./Products.js").Products | null;
 }

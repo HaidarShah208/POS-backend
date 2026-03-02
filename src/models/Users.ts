@@ -8,7 +8,6 @@ import {
   JoinColumn,
 } from "typeorm";
 import type { UserRole } from "../types/index.js";
-import { Branches } from "./Branches.js";
 
 @Entity("users")
 export class Users {
@@ -36,7 +35,7 @@ export class Users {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @ManyToOne(() => Branches, (b) => b.users, { onDelete: "CASCADE" })
+  @ManyToOne("Branches", "users", { onDelete: "CASCADE" })
   @JoinColumn({ name: "branch_id" })
-  branch!: Branches;
+  branch!: import("./Branches.js").Branches;
 }

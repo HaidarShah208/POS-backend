@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { Products } from "./Products.js";
 
 @Entity("categories")
 export class Categories {
@@ -28,6 +27,6 @@ export class Categories {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @OneToMany(() => Products, (p) => p.category)
-  products!: Products[];
+  @OneToMany("Products", "category")
+  products!: import("./Products.js").Products[];
 }

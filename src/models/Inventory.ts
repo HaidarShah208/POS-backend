@@ -11,7 +11,6 @@ import {
 } from "typeorm";
 import { Products } from "./Products.js";
 import { Branches } from "./Branches.js";
-import { StockAdjustments } from "./StockAdjustments.js";
 
 @Entity("inventory")
 @Unique(["productId", "branchId"])
@@ -45,6 +44,6 @@ export class Inventory {
   @JoinColumn({ name: "branch_id" })
   branch!: Branches;
 
-  @OneToMany(() => StockAdjustments, (a) => a.inventory)
-  adjustments!: StockAdjustments[];
+  @OneToMany("StockAdjustments", "inventory")
+  adjustments!: import("./StockAdjustments.js").StockAdjustments[];
 }

@@ -4,6 +4,7 @@ import { usersRoutes } from "./modules/users/users.routes.js";
 import { branchesRoutes } from "./modules/branches/branches.routes.js";
 import { productsRoutes } from "./modules/products/products.routes.js";
 import { ordersRoutes } from "./modules/orders/orders.routes.js";
+import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/branches", branchesRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/orders", ordersRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });

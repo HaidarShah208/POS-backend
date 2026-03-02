@@ -39,8 +39,21 @@ Server runs at `http://localhost:4000`.
 - `GET /api/branches` – list branches
 - `GET /api/branches/:id` – get branch
 - `POST /api/branches` – create branch (auth)
-- `GET /api/products` – list products
-- `GET /api/products/categories` – list categories
+
+**Products** (admin only for create/update/delete):
+- `GET /api/products` – list products (query: `page`, `limit`, `search`, `categoryId`, `lowStockOnly`; paginated)
+- `GET /api/products/:id` – get one product
+- `POST /api/products` – create product (admin, body: categoryId, name, price, cost?, sku?, barcode?, image?, description?, status?, modifiers?)
+- `PUT /api/products/:id` – update product (admin)
+- `PATCH /api/products/:id` – partial update (admin)
+- `DELETE /api/products/:id` – delete product (admin)
+- Categories: `GET/POST /api/products/categories`, `GET/PATCH/DELETE /api/products/categories/:id`
+
+**Inventory**:
+- `GET /api/inventory` – list inventory for current user’s branch (auth; query: `page`, `limit`, `lowStockOnly`)
+- `GET /api/inventory/branch/:branchId` – list inventory for a branch (auth)
+- `POST /api/inventory/adjust` – adjust stock (admin; body: productId, branchId, type: "add"|"remove", quantity, reason)
+
 - `GET /api/orders/kitchen/:branchId` – kitchen orders (auth)
 - `POST /api/orders` – place order (auth, body: items, subtotal, tax, discount, grandTotal, orderType, paymentMethod)
 

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as productsService from "./products.service.js";
+import type { GetProductsQueryDto } from "./products.dto.js";
 
 // Categories
 export async function getCategories(req: Request, res: Response): Promise<void> {
@@ -37,8 +38,17 @@ export async function deleteCategory(req: Request, res: Response): Promise<void>
 
 // Products
 export async function getProducts(req: Request, res: Response): Promise<void> {
-  const list = await productsService.getProducts();
-  res.json(list);
+  const query = req.query as unknown as GetProductsQueryDto;
+  const branchId = query.lowStockOnly ? req.user?.branchId : undefined;
+  const result = await productsService.getProducts({
+    page: query.page,
+    limit: query.limit,
+    search: query.search,
+    categoryId: query.categoryId,
+    lowStockOnly: query.lowStockOnly,
+    branchId,
+  });
+  res.json(result);
 }
 
 export async function getProductById(req: Request, res: Response): Promise<void> {

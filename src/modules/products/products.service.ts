@@ -1,9 +1,13 @@
 import { AppDataSource } from "../../config/data-source.js";
 import { Products } from "../../models/Products.js";
 import { Categories } from "../../models/Categories.js";
+import { Inventory } from "../../models/Inventory.js";
+import { Branches } from "../../models/Branches.js";
 
 const productRepo = () => AppDataSource.getRepository(Products);
 const categoryRepo = () => AppDataSource.getRepository(Categories);
+const inventoryRepo = () => AppDataSource.getRepository(Inventory);
+const branchRepo = () => AppDataSource.getRepository(Branches);
 
 // Categories
 export async function getCategories() {
@@ -35,12 +39,61 @@ export async function deleteCategory(id: string) {
   return (r.affected ?? 0) > 0;
 }
 
+export interface GetProductsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoryId?: string;
+  lowStockOnly?: boolean;
+  branchId?: string;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // Products
-export async function getProducts(branchId?: string) {
-  return productRepo().find({
-    relations: ["category"],
-    order: { name: "ASC" },
-  });
+export async function getProducts(params: GetProductsParams = {}): Promise<PaginatedResult<Products>> {
+  const { page = 1, limit = 20, search, categoryId, lowStockOnly, branchId } = params;
+  const skip = (page - 1) * limit;
+
+  const qb = productRepo()
+    .createQueryBuilder("p")
+    .leftJoinAndSelect("p.category", "category")
+    .orderBy("p.name", "ASC");
+
+  if (categoryId) {
+    qb.andWhere("p.category_id = :categoryId", { categoryId });
+  }
+
+  if (search && search.trim()) {
+    qb.andWhere("(p.name ILIKE :search OR p.sku ILIKE :search OR p.barcode ILIKE :search)", {
+      search: `%${search.trim()}%`,
+    });
+  }
+
+  if (lowStockOnly && branchId) {
+    qb.innerJoin(
+      "inventory",
+      "inv",
+      "inv.product_id = p.id AND inv.branch_id = :branchId AND inv.current_stock < inv.low_stock_threshold",
+      { branchId }
+    );
+  }
+
+  const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit) || 1,
+  };
 }
 
 export async function getProductById(id: string) {
@@ -66,7 +119,23 @@ export async function createProduct(data: {
     ...data,
     status: data.status ?? "active",
   });
-  return productRepo().save(product);
+  const saved = await productRepo().save(product);
+
+  const branches = await branchRepo().find({ select: ["id"] });
+  for (const branch of branches) {
+    const inv = inventoryRepo().create({
+      productId: saved.id,
+      branchId: branch.id,
+      currentStock: 0,
+      lowStockThreshold: 0,
+    });
+    await inventoryRepo().save(inv);
+  }
+
+  return productRepo().findOneOrFail({
+    where: { id: saved.id },
+    relations: ["category"],
+  });
 }
 
 export async function updateProduct(

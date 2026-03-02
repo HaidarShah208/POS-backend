@@ -2,7 +2,15 @@ import "dotenv/config";
 
 function required(key: string): string {
   const value = process.env[key];
-  if (!value) throw new Error(`Missing required env: ${key}`);
+  if (!value || value.trim() === "") {
+    const hint =
+      typeof process.env.RAILWAY_ENVIRONMENT !== "undefined"
+        ? " Set it in Railway: Project → your service → Variables."
+        : typeof process.env.VERCEL !== "undefined"
+          ? " Set it in Vercel: Project Settings → Environment Variables."
+          : " Add it to your .env file or set it in your hosting platform.";
+    throw new Error(`Missing required env: ${key}.${hint}`);
+  }
   return value;
 }
 

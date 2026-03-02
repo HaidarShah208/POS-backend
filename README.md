@@ -23,6 +23,22 @@ npm run dev
 
 Server runs at `http://localhost:4000`.
 
+## Deploying (e.g. Railway)
+
+The app needs these **environment variables** set in your hosting dashboard (do not commit `.env`):
+
+| Variable        | Required | Description |
+|----------------|----------|-------------|
+| `DATABASE_URL` | Yes      | PostgreSQL connection string (e.g. from Supabase) |
+| `JWT_SECRET`   | Yes      | Secret key for JWT signing |
+| `PORT`         | No       | Server port (Railway often sets this automatically) |
+| `NODE_ENV`     | No       | `production` in production |
+| `JWT_EXPIRES_IN` | No    | e.g. `7d` (default) |
+
+**Railway:** Open your project → select the backend service → **Variables** tab → Add `DATABASE_URL` and `JWT_SECRET`. Redeploy after adding variables.
+
+**Supabase:** Use the connection string from Project Settings → Database (URI, with your password). Use the **Connection pooling** URI if you use Supabase pooler.
+
 ## Scripts
 
 - `npm run dev` – development with nodemon + tsx

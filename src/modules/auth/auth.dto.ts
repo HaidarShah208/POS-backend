@@ -12,8 +12,8 @@ export class RegisterDto {
   @MinLength(6, { message: "Password must be at least 6 characters" })
   password!: string;
 
-  @IsIn(["admin", "cashier", "kitchen"])
-  role!: "admin" | "cashier" | "kitchen";
+  @IsIn(["admin", "manager", "cashier", "kitchen"])
+  role!: "admin" | "manager" | "cashier" | "kitchen";
 
   @IsString()
   branchId!: string;

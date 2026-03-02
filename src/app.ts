@@ -1,4 +1,6 @@
 import express from "express";
+import cors from "cors";
+import { env } from "./config/env.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { usersRoutes } from "./modules/users/users.routes.js";
 import { branchesRoutes } from "./modules/branches/branches.routes.js";
@@ -8,6 +10,14 @@ import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
 
 const app = express();
 
+app.use(
+  cors({
+    origin: env.corsOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);

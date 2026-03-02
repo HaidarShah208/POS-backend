@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+.env
+package-lock.json
+
+# Node.js
+node_modules/
+dist/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.env/
+.venv/
+env/
+venv/
+rag_env/
+
+# Mac/VSCode/IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Model/data folders
+mistral-7b-instruct-v0.2-gguf/
+Mistral-7B-Instruct-v0.2-GGUF/
+uploads/
+data/
+checkpoints/
+
+# Other
+*.sqlite
+*.db
+*.bak
+*.tmp

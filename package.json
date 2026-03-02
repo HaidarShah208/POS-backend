@@ -1,0 +1,52 @@
+{
+  "name": "pos-backend",
+  "version": "1.0.0",
+  "description": "Restaurant POS backend - Node.js, Express, TypeScript, TypeORM, Supabase",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "nodemon --exec \"node --import tsx src/server.ts\"",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "migration:generate": "typeorm migration:generate -d src/config/data-source.ts",
+    "migration:run": "node --import tsx src/database/run-migrations.ts",
+    "migration:revert": "typeorm migration:revert -d src/config/data-source.ts",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.12.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.9.0",
+    "@typescript-eslint/eslint-plugin": "^8.14.0",
+    "@typescript-eslint/parser": "^8.14.0",
+    "eslint": "^9.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "nodemon": "^3.1.7",
+    "prettier": "^3.3.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "nodemonConfig": {
+    "watch": ["src"],
+    "ext": "ts,json",
+    "exec": "node --loader ts-node/esm src/server.ts"
+  }
+}

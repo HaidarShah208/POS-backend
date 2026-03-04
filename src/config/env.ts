@@ -31,7 +31,7 @@ export const env = {
   jwtSecret: required("JWT_SECRET"),
   jwtExpiresIn: optional("JWT_EXPIRES_IN", "7d"),
   /** Comma-separated allowed origins for CORS (e.g. http://localhost:3001,https://myapp.vercel.app) */
-  CORS_ORIGIN: optionalList("CORS_ORIGIN", ["http://localhost:3000", "http://localhost:3001"]),
+  CORS_ORIGIN: optionalList("CORS_ORIGIN", ["http://localhost:3001"]),
 } as const;
 
 export const isDev = env.nodeEnv === "development";

@@ -82,3 +82,12 @@ The app needs these **environment variables** set in your hosting dashboard (do 
 - `PATCH /api/orders/kitchen/status` – update kitchen status (auth; body: orderId, status).
 
 Protected routes use header: `Authorization: Bearer <token>`.
+
+
+
+<!-- roles login credentilas -->
+cashier@pos.com
+cashier123
+
+kitchen@pos.com
+kitchen123

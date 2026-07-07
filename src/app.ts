@@ -1,9 +1,11 @@
+import "reflect-metadata";
 import express from "express";
 import cors from "cors";
 import path from "path";
 import fs from "fs/promises";
 import multer from "multer";
 import { env } from "./config/env.js";
+import { ensureDataSource } from "./config/init-db.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { usersRoutes } from "./modules/users/users.routes.js";
 import { branchesRoutes } from "./modules/branches/branches.routes.js";
@@ -22,6 +24,15 @@ app.use(
   })
 );
 app.use(express.json({ limit: "2mb" }));
+
+app.use(async (_req, _res, next) => {
+  try {
+    await ensureDataSource();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 const UPLOADS_ROOT = path.join(process.cwd(), "uploads");
 const LOGO_DIR = path.join(UPLOADS_ROOT, "logo");

@@ -1,11 +1,11 @@
 import "reflect-metadata";
 import app from "./app.js";
 import { env, isDev } from "./config/env.js";
-import { AppDataSource } from "./config/data-source.js";
+import { ensureDataSource } from "./config/init-db.js";
 
 async function main() {
   try {
-    await AppDataSource.initialize();
+    await ensureDataSource();
     if (isDev) {
       console.log("Database connected");
     }

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsIn } from "class-validator";
+import { IsEmail, IsString, MinLength, IsIn, IsOptional } from "class-validator";
 
 export class RegisterDto {
   @IsString()
@@ -17,6 +17,31 @@ export class RegisterDto {
 
   @IsString()
   branchId!: string;
+}
+
+export class RegisterOrgDto {
+  @IsString()
+  @MinLength(2)
+  restaurantName!: string;
+
+  @IsString()
+  @MinLength(2)
+  ownerName!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(6, { message: "Password must be at least 6 characters" })
+  password!: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
 }
 
 export class LoginDto {

@@ -5,12 +5,17 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
 
 @Entity("categories")
 export class Categories {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
+
+  @Column({ type: "uuid", name: "organization_id", nullable: true })
+  organizationId!: string | null;
 
   @Column({ type: "varchar", length: 255 })
   name!: string;
@@ -26,6 +31,10 @@ export class Categories {
 
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
+
+  @ManyToOne("Organizations", undefined, { onDelete: "CASCADE", nullable: true })
+  @JoinColumn({ name: "organization_id" })
+  organization!: import("./Organizations.js").Organizations | null;
 
   @OneToMany("Products", "category")
   products!: import("./Products.js").Products[];

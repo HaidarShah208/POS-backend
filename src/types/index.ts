@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "manager" | "cashier" | "kitchen";
+export type UserRole = "super_admin" | "owner" | "admin" | "manager" | "cashier" | "kitchen";
 
 export type OrderType = "dine-in" | "takeaway" | "delivery";
 
@@ -19,6 +19,7 @@ export interface JwtPayload {
   email: string;
   role: UserRole;
   branchId: string;
+  organizationId: string | null;
   iat?: number;
   exp?: number;
 }

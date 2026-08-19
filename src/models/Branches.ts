@@ -5,12 +5,17 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
 
 @Entity("branches")
 export class Branches {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
+
+  @Column({ type: "uuid", name: "organization_id", nullable: true })
+  organizationId!: string | null;
 
   @Column({ type: "varchar", length: 255 })
   name!: string;
@@ -26,6 +31,10 @@ export class Branches {
 
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
+
+  @ManyToOne("Organizations", "branches", { onDelete: "CASCADE", nullable: true })
+  @JoinColumn({ name: "organization_id" })
+  organization!: import("./Organizations.js").Organizations | null;
 
   @OneToMany("Users", "branch")
   users!: import("./Users.js").Users[];

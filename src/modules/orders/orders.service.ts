@@ -5,8 +5,7 @@ import { Inventory } from "../../models/Inventory.js";
 import type { OrderType, PaymentMethod, OrderStatus } from "../../types/index.js";
 
 const orderRepo = () => AppDataSource.getRepository(Orders);
- 
-/** Calculate subtotal from items; optionally apply tax/discount to get grandTotal */
+
 function calculateTotals(items: { price: number; quantity: number; modifiers?: { price: number }[] }[]) {
   let subtotal = 0;
   for (const it of items) {
@@ -29,6 +28,7 @@ const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 export interface PlaceOrderInput {
   branchId: string;
   userId?: string | null;
+  organizationId?: string | null;
   items: {
     productId: string;
     name: string;
@@ -51,7 +51,7 @@ export interface PlaceOrderResult {
 }
 
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
-  const { branchId, userId, items, orderType, paymentMethod } = input;
+  const { branchId, userId, organizationId, items, orderType, paymentMethod } = input;
   const calculated = calculateTotals(items);
   const subtotal = input.subtotal ?? calculated.subtotal;
   const tax = input.tax ?? 0;
@@ -82,6 +82,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     const order = orderRepository.create({
       branchId,
       userId: userId ?? null,
+      organizationId: organizationId ?? null,
       orderNumber: tokenNumber,
       tokenNumber,
       orderType,
@@ -126,6 +127,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
 export interface GetOrdersParams {
   branchId?: string;
+  organizationId?: string | null;
   status?: OrderStatus;
   dateFrom?: Date;
   dateTo?: Date;
@@ -142,7 +144,7 @@ export interface PaginatedOrdersResult {
 }
 
 export async function getOrders(params: GetOrdersParams = {}): Promise<PaginatedOrdersResult> {
-  const { branchId, status, dateFrom, dateTo, page = 1, limit = 20 } = params;
+  const { branchId, organizationId, status, dateFrom, dateTo, page = 1, limit = 20 } = params;
   const skip = (page - 1) * limit;
 
   const qb = orderRepo()
@@ -151,6 +153,9 @@ export async function getOrders(params: GetOrdersParams = {}): Promise<Paginated
     .leftJoinAndSelect("o.branch", "branch")
     .leftJoinAndSelect("o.user", "user");
 
+  if (organizationId) {
+    qb.andWhere("o.organization_id = :organizationId", { organizationId });
+  }
   if (branchId) {
     qb.andWhere("o.branchId = :branchId", { branchId });
   }
@@ -177,25 +182,31 @@ export async function getOrders(params: GetOrdersParams = {}): Promise<Paginated
   };
 }
 
-export async function getByBranchId(branchId: string, limit = 50) {
+export async function getByBranchId(branchId: string, limit = 50, organizationId?: string | null) {
+  const where: Record<string, unknown> = { branchId };
+  if (organizationId) where.organizationId = organizationId;
   return orderRepo().find({
-    where: { branchId },
+    where,
     relations: ["items"],
     order: { createdAt: "DESC" },
     take: limit,
   });
 }
 
-export async function getById(id: string) {
+export async function getById(id: string, organizationId?: string | null) {
+  const where: Record<string, unknown> = { id };
+  if (organizationId) where.organizationId = organizationId;
   return orderRepo().findOne({
-    where: { id },
+    where,
     relations: ["items", "items.product", "branch", "user"],
   });
 }
 
-export async function getKitchenOrders(branchId: string) {
+export async function getKitchenOrders(branchId: string, organizationId?: string | null) {
+  const where: Record<string, unknown> = { branchId };
+  if (organizationId) where.organizationId = organizationId;
   return orderRepo().find({
-    where: { branchId },
+    where,
     relations: ["items"],
     order: { createdAt: "DESC" },
     take: 100,
@@ -204,9 +215,12 @@ export async function getKitchenOrders(branchId: string) {
 
 export async function updateOrderStatus(
   orderId: string,
-  newStatus: OrderStatus
+  newStatus: OrderStatus,
+  organizationId?: string | null
 ): Promise<{ ok: boolean; error?: string }> {
-  const order = await orderRepo().findOne({ where: { id: orderId } });
+  const where: Record<string, unknown> = { id: orderId };
+  if (organizationId) where.organizationId = organizationId;
+  const order = await orderRepo().findOne({ where });
   if (!order) return { ok: false, error: "Order not found" };
 
   const allowed = VALID_STATUS_TRANSITIONS[order.status as OrderStatus];
@@ -219,7 +233,7 @@ export async function updateOrderStatus(
 
   order.status = newStatus;
   if (newStatus === "ready" || newStatus === "completed") {
-    order.kitchenStatus = newStatus === "completed" ? "READY" : "READY";
+    order.kitchenStatus = "READY";
   }
   await orderRepo().save(order);
   return { ok: true };
@@ -227,9 +241,12 @@ export async function updateOrderStatus(
 
 export async function updateKitchenStatus(
   orderId: string,
-  kitchenStatus: "NEW" | "PREPARING" | "READY"
+  kitchenStatus: "NEW" | "PREPARING" | "READY",
+  organizationId?: string | null
 ): Promise<boolean> {
-  const order = await orderRepo().findOne({ where: { id: orderId } });
+  const where: Record<string, unknown> = { id: orderId };
+  if (organizationId) where.organizationId = organizationId;
+  const order = await orderRepo().findOne({ where });
   if (!order) return false;
   order.kitchenStatus = kitchenStatus;
   if (kitchenStatus === "READY") {

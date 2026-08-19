@@ -9,32 +9,48 @@ const categoryRepo = () => AppDataSource.getRepository(Categories);
 const inventoryRepo = () => AppDataSource.getRepository(Inventory);
 const branchRepo = () => AppDataSource.getRepository(Branches);
 
-// Categories
-export async function getCategories() {
-  return categoryRepo().find({ order: { sortOrder: "ASC", name: "ASC" } });
+export async function getCategories(organizationId?: string | null) {
+  const where: Record<string, unknown> = {};
+  if (organizationId) where.organizationId = organizationId;
+  return categoryRepo().find({ where, order: { sortOrder: "ASC", name: "ASC" } });
 }
 
-export async function getCategoryById(id: string) {
-  return categoryRepo().findOne({ where: { id } });
+export async function getCategoryById(id: string, organizationId?: string | null) {
+  const where: Record<string, unknown> = { id };
+  if (organizationId) where.organizationId = organizationId;
+  return categoryRepo().findOne({ where });
 }
 
-export async function createCategory(data: { name: string; slug: string; sortOrder?: number }) {
+export async function createCategory(
+  data: { name: string; slug: string; sortOrder?: number },
+  organizationId?: string | null
+) {
   const cat = categoryRepo().create({
     ...data,
     sortOrder: data.sortOrder ?? 0,
+    organizationId: organizationId || null,
   });
   return categoryRepo().save(cat);
 }
 
 export async function updateCategory(
   id: string,
-  data: Partial<{ name: string; slug: string; sortOrder: number }>
+  data: Partial<{ name: string; slug: string; sortOrder: number }>,
+  organizationId?: string | null
 ) {
+  const where: Record<string, unknown> = { id };
+  if (organizationId) where.organizationId = organizationId;
+  const cat = await categoryRepo().findOne({ where });
+  if (!cat) return null;
   await categoryRepo().update(id, data as object);
   return categoryRepo().findOneOrFail({ where: { id } });
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: string, organizationId?: string | null) {
+  const where: Record<string, unknown> = { id };
+  if (organizationId) where.organizationId = organizationId;
+  const cat = await categoryRepo().findOne({ where });
+  if (!cat) return false;
   const r = await categoryRepo().delete(id);
   return (r.affected ?? 0) > 0;
 }
@@ -46,6 +62,7 @@ export interface GetProductsParams {
   categoryId?: string;
   lowStockOnly?: boolean;
   branchId?: string;
+  organizationId?: string | null;
 }
 
 export interface PaginatedResult<T> {
@@ -56,15 +73,18 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-// Products
 export async function getProducts(params: GetProductsParams = {}): Promise<PaginatedResult<Products>> {
-  const { page = 1, limit = 20, search, categoryId, lowStockOnly, branchId } = params;
+  const { page = 1, limit = 20, search, categoryId, lowStockOnly, branchId, organizationId } = params;
   const skip = (page - 1) * limit;
 
   const qb = productRepo()
     .createQueryBuilder("p")
     .leftJoinAndSelect("p.category", "category")
     .orderBy("p.name", "ASC");
+
+  if (organizationId) {
+    qb.andWhere("p.organization_id = :organizationId", { organizationId });
+  }
 
   if (categoryId) {
     qb.andWhere("p.category_id = :categoryId", { categoryId });
@@ -96,32 +116,40 @@ export async function getProducts(params: GetProductsParams = {}): Promise<Pagin
   };
 }
 
-export async function getProductById(id: string) {
+export async function getProductById(id: string, organizationId?: string | null) {
+  const where: Record<string, unknown> = { id };
+  if (organizationId) where.organizationId = organizationId;
   return productRepo().findOne({
-    where: { id },
+    where,
     relations: ["category"],
   });
 }
 
-export async function createProduct(data: {
-  categoryId: string;
-  name: string;
-  price: number;
-  cost?: number;
-  sku?: string;
-  barcode?: string;
-  image?: string;
-  description?: string;
-  status?: string;
-  modifiers?: { id: string; name: string; price: number }[];
-}) {
+export async function createProduct(
+  data: {
+    categoryId: string;
+    name: string;
+    price: number;
+    cost?: number;
+    sku?: string;
+    barcode?: string;
+    image?: string;
+    description?: string;
+    status?: string;
+    modifiers?: { id: string; name: string; price: number }[];
+  },
+  organizationId?: string | null
+) {
   const product = productRepo().create({
     ...data,
     status: data.status ?? "active",
+    organizationId: organizationId || null,
   });
   const saved = await productRepo().save(product);
 
-  const branches = await branchRepo().find({ select: ["id"] });
+  const branchWhere: Record<string, unknown> = {};
+  if (organizationId) branchWhere.organizationId = organizationId;
+  const branches = await branchRepo().find({ where: branchWhere, select: ["id"] });
   for (const branch of branches) {
     const inv = inventoryRepo().create({
       productId: saved.id,
@@ -151,13 +179,22 @@ export async function updateProduct(
     description: string;
     status: string;
     modifiers: { id: string; name: string; price: number }[];
-  }>
+  }>,
+  organizationId?: string | null
 ) {
+  const where: Record<string, unknown> = { id };
+  if (organizationId) where.organizationId = organizationId;
+  const existing = await productRepo().findOne({ where });
+  if (!existing) return null;
   await productRepo().update(id, data as object);
   return productRepo().findOneOrFail({ where: { id }, relations: ["category"] });
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string, organizationId?: string | null) {
+  const where: Record<string, unknown> = { id };
+  if (organizationId) where.organizationId = organizationId;
+  const existing = await productRepo().findOne({ where });
+  if (!existing) return false;
   const r = await productRepo().delete(id);
   return (r.affected ?? 0) > 0;
 }

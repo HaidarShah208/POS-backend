@@ -7,6 +7,10 @@ export function requireRole(...allowed: UserRole[]) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
+    if (req.user.role === "super_admin") {
+      next();
+      return;
+    }
     if (!allowed.includes(req.user.role)) {
       res.status(403).json({ error: "Forbidden: insufficient role" });
       return;
@@ -15,4 +19,6 @@ export function requireRole(...allowed: UserRole[]) {
   };
 }
 
-export const requireAdmin = requireRole("admin");
+export const requireAdmin = requireRole("owner", "admin");
+export const requireSuperAdmin = requireRole("super_admin");
+export const requireOwnerOrAbove = requireRole("super_admin", "owner");

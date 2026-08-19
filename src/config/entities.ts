@@ -1,3 +1,6 @@
+import { Organizations } from "../models/Organizations.js";
+import { Plans } from "../models/Plans.js";
+import { Subscriptions } from "../models/Subscriptions.js";
 import { Branches } from "../models/Branches.js";
 import { Users } from "../models/Users.js";
 import { Categories } from "../models/Categories.js";
@@ -8,6 +11,9 @@ import { Inventory } from "../models/Inventory.js";
 import { StockAdjustments } from "../models/StockAdjustments.js";
 
 export const entities = [
+  Organizations,
+  Plans,
+  Subscriptions,
   Branches,
   Users,
   Categories,

@@ -17,6 +17,9 @@ export class Orders {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  @Column({ type: "uuid", name: "organization_id", nullable: true })
+  organizationId!: string | null;
+
   @Column({ type: "uuid", name: "branch_id" })
   branchId!: string;
 
@@ -47,7 +50,6 @@ export class Orders {
   @Column({ type: "varchar", length: 20, default: "pending" })
   status!: OrderStatus;
 
-  /** Token number for display (per-branch daily increment, e.g. 20250302-001) */
   @Column({ type: "varchar", length: 30, name: "token_number", unique: true })
   tokenNumber!: string;
 
@@ -59,6 +61,10 @@ export class Orders {
 
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
+
+  @ManyToOne("Organizations", undefined, { onDelete: "CASCADE", nullable: true })
+  @JoinColumn({ name: "organization_id" })
+  organization!: import("./Organizations.js").Organizations | null;
 
   @ManyToOne("Branches", "orders", { onDelete: "CASCADE" })
   @JoinColumn({ name: "branch_id" })

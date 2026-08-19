@@ -14,6 +14,9 @@ export class Users {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  @Column({ type: "uuid", name: "organization_id", nullable: true })
+  organizationId!: string | null;
+
   @Column({ type: "uuid", name: "branch_id" })
   branchId!: string;
 
@@ -34,6 +37,10 @@ export class Users {
 
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
+
+  @ManyToOne("Organizations", "users", { onDelete: "CASCADE", nullable: true })
+  @JoinColumn({ name: "organization_id" })
+  organization!: import("./Organizations.js").Organizations | null;
 
   @ManyToOne("Branches", "users", { onDelete: "CASCADE" })
   @JoinColumn({ name: "branch_id" })

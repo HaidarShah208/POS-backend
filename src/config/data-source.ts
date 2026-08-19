@@ -12,6 +12,8 @@ import { OrderItems1730060000000 } from "../database/migrations/1730060000000-or
 import { Inventory1730070000000 } from "../database/migrations/1730070000000-inventory.js";
 import { StockAdjustments1730080000000 } from "../database/migrations/1730080000000-stock-adjustments.js";
 import { OrdersTokenNumber1730090000000 } from "../database/migrations/1730090000000-orders-token-number.js";
+import { MultiTenancy1730100000000 } from "../database/migrations/1730100000000-multi-tenancy.js";
+import { BackfillOrganization1730110000000 } from "../database/migrations/1730110000000-backfill-organization.js";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -29,10 +31,11 @@ export const AppDataSource = new DataSource({
     Inventory1730070000000,
     StockAdjustments1730080000000,
     OrdersTokenNumber1730090000000,
+    MultiTenancy1730100000000,
+    BackfillOrganization1730110000000,
   ],
   migrationsTableName: "migrations",
   subscribers: [],
 });
 
-// For TypeORM CLI (migration:generate, migration:run)
 export default AppDataSource;

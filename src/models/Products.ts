@@ -7,10 +7,14 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
+
 @Entity("products")
 export class Products {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
+
+  @Column({ type: "uuid", name: "organization_id", nullable: true })
+  organizationId!: string | null;
 
   @Column({ type: "uuid", name: "category_id" })
   categoryId!: string;
@@ -47,6 +51,10 @@ export class Products {
 
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
+
+  @ManyToOne("Organizations", undefined, { onDelete: "CASCADE", nullable: true })
+  @JoinColumn({ name: "organization_id" })
+  organization!: import("./Organizations.js").Organizations | null;
 
   @ManyToOne("Categories", "products", { onDelete: "CASCADE" })
   @JoinColumn({ name: "category_id" })

@@ -1,8 +1,11 @@
 import "reflect-metadata";
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import helmetModule from "helmet";
+import rateLimitModule from "express-rate-limit";
+
+const helmet = (helmetModule as unknown as { default: typeof helmetModule }).default ?? helmetModule;
+const rateLimit = (rateLimitModule as unknown as { default: typeof rateLimitModule }).default ?? rateLimitModule;
 import path from "path";
 import fs from "fs/promises";
 import multer from "multer";

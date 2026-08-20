@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import "dotenv/config";
 import { DataSource } from "typeorm";
-import { env, isDev } from "./env.js";
+import { env, isDev, isProd } from "./env.js";
 import { entities } from "./entities.js";
 import { Branches1730010000000 } from "../database/migrations/1730010000000-branches.js";
 import { Categories1730020000000 } from "../database/migrations/1730020000000-categories.js";
@@ -14,12 +14,13 @@ import { StockAdjustments1730080000000 } from "../database/migrations/1730080000
 import { OrdersTokenNumber1730090000000 } from "../database/migrations/1730090000000-orders-token-number.js";
 import { MultiTenancy1730100000000 } from "../database/migrations/1730100000000-multi-tenancy.js";
 import { BackfillOrganization1730110000000 } from "../database/migrations/1730110000000-backfill-organization.js";
+import { ScalabilityIndexes1730120000000 } from "../database/migrations/1730120000000-scalability-indexes.js";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: env.databaseUrl,
   synchronize: false,
-  logging: isDev,
+  logging: isDev ? true : ["error", "warn"],
   entities,
   migrations: [
     Branches1730010000000,
@@ -33,9 +34,19 @@ export const AppDataSource = new DataSource({
     OrdersTokenNumber1730090000000,
     MultiTenancy1730100000000,
     BackfillOrganization1730110000000,
+    ScalabilityIndexes1730120000000,
   ],
   migrationsTableName: "migrations",
   subscribers: [],
+  extra: {
+    max: env.dbPoolMax,
+    min: env.dbPoolMin,
+    connectionTimeoutMillis: env.dbConnectionTimeout,
+    idleTimeoutMillis: env.dbIdleTimeout,
+  },
+  ...(isProd && env.databaseUrl.includes("sslmode=require")
+    ? { ssl: { rejectUnauthorized: false } }
+    : {}),
 });
 
 export default AppDataSource;

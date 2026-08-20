@@ -2,6 +2,7 @@ import { AppDataSource } from "../../config/data-source.js";
 import { Orders } from "../../models/Orders.js";
 import { OrderItems } from "../../models/OrderItems.js";
 import { Inventory } from "../../models/Inventory.js";
+import { logAudit } from "../../services/audit.service.js";
 import type { OrderType, PaymentMethod, OrderStatus } from "../../types/index.js";
 
 const orderRepo = () => AppDataSource.getRepository(Orders);
@@ -29,6 +30,7 @@ export interface PlaceOrderInput {
   branchId: string;
   userId?: string | null;
   organizationId?: string | null;
+  idempotencyKey?: string | null;
   items: {
     productId: string;
     name: string;
@@ -51,39 +53,67 @@ export interface PlaceOrderResult {
 }
 
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
-  const { branchId, userId, organizationId, items, orderType, paymentMethod } = input;
+  const { branchId, userId, organizationId, idempotencyKey, items, orderType, paymentMethod } = input;
+
+  if (idempotencyKey) {
+    const existing = await orderRepo().findOne({
+      where: { orderNumber: idempotencyKey },
+      select: ["id", "tokenNumber"],
+    });
+    if (existing) {
+      return { orderId: existing.id, tokenNumber: existing.tokenNumber };
+    }
+  }
+
   const calculated = calculateTotals(items);
   const subtotal = input.subtotal ?? calculated.subtotal;
   const tax = input.tax ?? 0;
   const discount = input.discount ?? 0;
   const grandTotal = input.grandTotal ?? subtotal + tax - discount;
 
-  return await AppDataSource.transaction(async (manager) => {
+  return await AppDataSource.transaction("SERIALIZABLE", async (manager) => {
     const orderRepository = manager.getRepository(Orders);
     const itemRepository = manager.getRepository(OrderItems);
-    const invRepository = manager.getRepository(Inventory);
 
-    const tokenNumber = await (async () => {
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
-      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-      const last = await orderRepository
-        .createQueryBuilder("o")
-        .where("o.branch_id = :branchId", { branchId })
-        .andWhere("o.created_at >= :start", { start: startOfDay })
-        .andWhere("o.created_at < :end", { end: endOfDay })
-        .orderBy("o.created_at", "DESC")
-        .getOne();
-      const lastToken = last?.tokenNumber ?? "";
-      const lastSeq = lastToken.startsWith(dateStr) ? parseInt(lastToken.split("-")[1] ?? "0", 10) : 0;
-      return `${dateStr}-${String(lastSeq + 1).padStart(3, "0")}`;
-    })();
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+    const lastOrder = await orderRepository
+      .createQueryBuilder("o")
+      .where("o.branch_id = :branchId", { branchId })
+      .andWhere("o.created_at >= :start", { start: startOfDay })
+      .andWhere("o.created_at < :end", { end: endOfDay })
+      .orderBy("o.created_at", "DESC")
+      .select(["o.tokenNumber"])
+      .getOne();
+
+    const lastToken = lastOrder?.tokenNumber ?? "";
+    const lastSeq = lastToken.startsWith(dateStr) ? parseInt(lastToken.split("-")[1] ?? "0", 10) : 0;
+    const tokenNumber = `${dateStr}-${String(lastSeq + 1).padStart(3, "0")}`;
+
+    for (const it of items) {
+      const result = await manager.query(
+        `UPDATE inventory SET current_stock = current_stock - $1, updated_at = now()
+         WHERE product_id = $2 AND branch_id = $3 AND current_stock >= $1`,
+        [it.quantity, it.productId, branchId]
+      );
+      if (result[1] === 0) {
+        const inv = await manager.query(
+          `SELECT current_stock FROM inventory WHERE product_id = $1 AND branch_id = $2`,
+          [it.productId, branchId]
+        );
+        if (inv.length > 0) {
+          throw new Error(`Insufficient stock for product ${it.name}. Available: ${inv[0].current_stock}`);
+        }
+      }
+    }
 
     const order = orderRepository.create({
       branchId,
       userId: userId ?? null,
       organizationId: organizationId ?? null,
-      orderNumber: tokenNumber,
+      orderNumber: idempotencyKey || tokenNumber,
       tokenNumber,
       orderType,
       paymentMethod,
@@ -94,19 +124,6 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       status: "pending",
     });
     await orderRepository.save(order);
-
-    for (const it of items) {
-      const inv = await invRepository.findOne({
-        where: { productId: it.productId, branchId },
-      });
-      if (inv) {
-        if (inv.currentStock < it.quantity) {
-          throw new Error(`Insufficient stock for product ${it.productId}`);
-        }
-        inv.currentStock -= it.quantity;
-        await invRepository.save(inv);
-      }
-    }
 
     const orderItems = items.map((it) =>
       itemRepository.create({
@@ -121,6 +138,15 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     );
     await itemRepository.save(orderItems);
 
+    logAudit({
+      organizationId,
+      actorId: userId,
+      action: "order.created",
+      resource: "order",
+      resourceId: order.id,
+      meta: { tokenNumber, grandTotal, itemCount: items.length },
+    });
+
     return { orderId: order.id, tokenNumber };
   });
 }
@@ -131,8 +157,11 @@ export interface GetOrdersParams {
   status?: OrderStatus;
   dateFrom?: Date;
   dateTo?: Date;
+  search?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface PaginatedOrdersResult {
@@ -143,33 +172,55 @@ export interface PaginatedOrdersResult {
   totalPages: number;
 }
 
+const ALLOWED_ORDER_SORTS = new Set(["createdAt", "grandTotal", "status", "orderType"]);
+const SORT_COLUMN_MAP: Record<string, string> = {
+  createdAt: "o.created_at",
+  grandTotal: "o.grand_total",
+  status: "o.status",
+  orderType: "o.order_type",
+};
+
 export async function getOrders(params: GetOrdersParams = {}): Promise<PaginatedOrdersResult> {
-  const { branchId, organizationId, status, dateFrom, dateTo, page = 1, limit = 20 } = params;
+  const {
+    branchId, organizationId, status, dateFrom, dateTo, search,
+    page = 1,
+    sortBy = "createdAt",
+    sortOrder = "DESC",
+  } = params;
+  const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
   const skip = (page - 1) * limit;
 
   const qb = orderRepo()
     .createQueryBuilder("o")
     .leftJoinAndSelect("o.items", "items")
     .leftJoinAndSelect("o.branch", "branch")
-    .leftJoinAndSelect("o.user", "user");
+    .leftJoin("o.user", "user")
+    .addSelect(["user.id", "user.name", "user.email", "user.role"]);
 
   if (organizationId) {
     qb.andWhere("o.organization_id = :organizationId", { organizationId });
   }
   if (branchId) {
-    qb.andWhere("o.branchId = :branchId", { branchId });
+    qb.andWhere("o.branch_id = :branchId", { branchId });
   }
   if (status) {
     qb.andWhere("o.status = :status", { status });
   }
   if (dateFrom) {
-    qb.andWhere("o.createdAt >= :dateFrom", { dateFrom });
+    qb.andWhere("o.created_at >= :dateFrom", { dateFrom });
   }
   if (dateTo) {
-    qb.andWhere("o.createdAt < :dateTo", { dateTo });
+    qb.andWhere("o.created_at < :dateTo", { dateTo });
+  }
+  if (search && search.trim()) {
+    qb.andWhere("(o.order_number ILIKE :search OR o.token_number ILIKE :search)", {
+      search: `%${search.trim()}%`,
+    });
   }
 
-  qb.orderBy("o.createdAt", "DESC").skip(skip).take(limit);
+  const sortCol = ALLOWED_ORDER_SORTS.has(sortBy) ? SORT_COLUMN_MAP[sortBy] : "o.created_at";
+  const direction = sortOrder === "ASC" ? "ASC" : "DESC";
+  qb.orderBy(sortCol, direction).skip(skip).take(limit);
 
   const [data, total] = await qb.getManyAndCount();
 
@@ -183,13 +234,14 @@ export async function getOrders(params: GetOrdersParams = {}): Promise<Paginated
 }
 
 export async function getByBranchId(branchId: string, limit = 50, organizationId?: string | null) {
+  const safeLimit = Math.min(Math.max(limit, 1), 100);
   const where: Record<string, unknown> = { branchId };
   if (organizationId) where.organizationId = organizationId;
   return orderRepo().find({
     where,
     relations: ["items"],
     order: { createdAt: "DESC" },
-    take: limit,
+    take: safeLimit,
   });
 }
 
@@ -203,20 +255,26 @@ export async function getById(id: string, organizationId?: string | null) {
 }
 
 export async function getKitchenOrders(branchId: string, organizationId?: string | null) {
-  const where: Record<string, unknown> = { branchId };
-  if (organizationId) where.organizationId = organizationId;
-  return orderRepo().find({
-    where,
-    relations: ["items"],
-    order: { createdAt: "DESC" },
-    take: 100,
-  });
+  const qb = orderRepo()
+    .createQueryBuilder("o")
+    .leftJoinAndSelect("o.items", "items")
+    .where("o.branch_id = :branchId", { branchId })
+    .andWhere("o.kitchen_status IN (:...statuses)", { statuses: ["NEW", "PREPARING"] })
+    .orderBy("o.created_at", "ASC")
+    .take(100);
+
+  if (organizationId) {
+    qb.andWhere("o.organization_id = :organizationId", { organizationId });
+  }
+
+  return qb.getMany();
 }
 
 export async function updateOrderStatus(
   orderId: string,
   newStatus: OrderStatus,
-  organizationId?: string | null
+  organizationId?: string | null,
+  actorId?: string | null
 ): Promise<{ ok: boolean; error?: string }> {
   const where: Record<string, unknown> = { id: orderId };
   if (organizationId) where.organizationId = organizationId;
@@ -236,6 +294,16 @@ export async function updateOrderStatus(
     order.kitchenStatus = "READY";
   }
   await orderRepo().save(order);
+
+  logAudit({
+    organizationId,
+    actorId,
+    action: "order.status_changed",
+    resource: "order",
+    resourceId: orderId,
+    meta: { from: order.status, to: newStatus },
+  });
+
   return { ok: true };
 }
 

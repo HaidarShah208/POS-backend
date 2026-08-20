@@ -35,7 +35,7 @@ export async function getOrganizationById(req: Request, res: Response): Promise<
 }
 
 export async function updateOrganization(req: Request, res: Response): Promise<void> {
-  const org = await adminService.updateOrganization(req.params.id, req.body);
+  const org = await adminService.updateOrganization(req.params.id, req.body, req.user?.sub);
   if (!org) {
     res.status(404).json({ error: "Organization not found" });
     return;
@@ -52,7 +52,8 @@ export async function updateOrganizationStatus(req: Request, res: Response): Pro
   }
   const org = await adminService.updateOrganizationStatus(
     req.params.id,
-    status as "active" | "suspended" | "trial" | "inactive"
+    status as "active" | "suspended" | "trial" | "inactive",
+    req.user?.sub
   );
   if (!org) {
     res.status(404).json({ error: "Organization not found" });

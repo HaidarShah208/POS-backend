@@ -9,6 +9,7 @@ import { Orders } from "../models/Orders.js";
 import { OrderItems } from "../models/OrderItems.js";
 import { Inventory } from "../models/Inventory.js";
 import { StockAdjustments } from "../models/StockAdjustments.js";
+import { AuditLogs } from "../models/AuditLogs.js";
 
 export const entities = [
   Organizations,
@@ -22,4 +23,5 @@ export const entities = [
   OrderItems,
   Inventory,
   StockAdjustments,
+  AuditLogs,
 ];

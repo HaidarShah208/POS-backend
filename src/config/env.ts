@@ -18,6 +18,13 @@ function optional(key: string, fallback: string): string {
   return process.env[key] ?? fallback;
 }
 
+function optionalInt(key: string, fallback: number): number {
+  const raw = process.env[key];
+  if (!raw) return fallback;
+  const parsed = parseInt(raw, 10);
+  return isNaN(parsed) ? fallback : parsed;
+}
+
 function optionalList(key: string, fallback: string[]): string[] {
   const raw = process.env[key];
   if (!raw || raw.trim() === "") return fallback;
@@ -30,8 +37,18 @@ export const env = {
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET"),
   jwtExpiresIn: optional("JWT_EXPIRES_IN", "7d"),
-  /** Comma-separated allowed origins for CORS (e.g. http://localhost:3001,https://myapp.vercel.app) */
   CORS_ORIGIN: optionalList("CORS_ORIGIN", ["http://localhost:3001"]),
+
+  dbPoolMax: optionalInt("DB_POOL_MAX", 20),
+  dbPoolMin: optionalInt("DB_POOL_MIN", 2),
+  dbConnectionTimeout: optionalInt("DB_CONNECTION_TIMEOUT", 10000),
+  dbIdleTimeout: optionalInt("DB_IDLE_TIMEOUT", 30000),
+
+  rateLimitAuthMax: optionalInt("RATE_LIMIT_AUTH_MAX", 20),
+  rateLimitAuthWindowMs: optionalInt("RATE_LIMIT_AUTH_WINDOW_MS", 15 * 60 * 1000),
+  rateLimitApiMax: optionalInt("RATE_LIMIT_API_MAX", 200),
+  rateLimitApiWindowMs: optionalInt("RATE_LIMIT_API_WINDOW_MS", 60 * 1000),
 } as const;
 
 export const isDev = env.nodeEnv === "development";
+export const isProd = env.nodeEnv === "production";

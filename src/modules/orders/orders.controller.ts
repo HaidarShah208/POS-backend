@@ -15,11 +15,15 @@ export async function placeOrder(req: Request, res: Response): Promise<void> {
     res.status(400).json({ error: "items array is required and must not be empty" });
     return;
   }
+
+  const idempotencyKey = req.headers["idempotency-key"] as string | undefined;
+
   try {
     const result = await ordersService.placeOrder({
       branchId,
       userId: req.user?.sub,
       organizationId: orgId,
+      idempotencyKey: idempotencyKey || null,
       items,
       subtotal,
       tax,
@@ -63,8 +67,11 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
     status: query.status as ordersService.GetOrdersParams["status"],
     dateFrom,
     dateTo,
+    search: (query as Record<string, string>).search,
     page: query.page,
     limit: query.limit,
+    sortBy: (query as Record<string, string>).sortBy,
+    sortOrder: (query as Record<string, string>).sortOrder as "ASC" | "DESC",
   });
   res.json(result);
 }
@@ -104,7 +111,12 @@ export async function getKitchenOrders(req: Request, res: Response): Promise<voi
 export async function updateOrderStatus(req: Request, res: Response): Promise<void> {
   const { status } = req.body as { status: string };
   const orgId = getOrgId(req);
-  const result = await ordersService.updateOrderStatus(req.params.id, status as "pending" | "accepted" | "preparing" | "ready" | "completed" | "cancelled", orgId);
+  const result = await ordersService.updateOrderStatus(
+    req.params.id,
+    status as "pending" | "accepted" | "preparing" | "ready" | "completed" | "cancelled",
+    orgId,
+    req.user?.sub
+  );
   if (!result.ok) {
     res.status(result.error?.includes("transition") ? 400 : 404).json({ error: result.error });
     return;

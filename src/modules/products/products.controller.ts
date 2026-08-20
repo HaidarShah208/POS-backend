@@ -21,13 +21,13 @@ export async function getCategoryById(req: Request, res: Response): Promise<void
 
 export async function createCategory(req: Request, res: Response): Promise<void> {
   const orgId = getOrgId(req);
-  const cat = await productsService.createCategory(req.body, orgId);
+  const cat = await productsService.createCategory(req.body, orgId, req.user?.sub);
   res.status(201).json(cat);
 }
 
 export async function updateCategory(req: Request, res: Response): Promise<void> {
   const orgId = getOrgId(req);
-  const cat = await productsService.updateCategory(req.params.id, req.body, orgId);
+  const cat = await productsService.updateCategory(req.params.id, req.body, orgId, req.user?.sub);
   if (!cat) {
     res.status(404).json({ error: "Category not found" });
     return;
@@ -37,7 +37,7 @@ export async function updateCategory(req: Request, res: Response): Promise<void>
 
 export async function deleteCategory(req: Request, res: Response): Promise<void> {
   const orgId = getOrgId(req);
-  const ok = await productsService.deleteCategory(req.params.id, orgId);
+  const ok = await productsService.deleteCategory(req.params.id, orgId, req.user?.sub);
   if (!ok) {
     res.status(404).json({ error: "Category not found" });
     return;
@@ -57,6 +57,8 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
     lowStockOnly: query.lowStockOnly,
     branchId,
     organizationId: orgId,
+    sortBy: (query as Record<string, string>).sortBy,
+    sortOrder: (query as Record<string, string>).sortOrder as "ASC" | "DESC",
   });
   res.json(result);
 }
@@ -73,13 +75,13 @@ export async function getProductById(req: Request, res: Response): Promise<void>
 
 export async function createProduct(req: Request, res: Response): Promise<void> {
   const orgId = getOrgId(req);
-  const product = await productsService.createProduct(req.body, orgId);
+  const product = await productsService.createProduct(req.body, orgId, req.user?.sub);
   res.status(201).json(product);
 }
 
 export async function updateProduct(req: Request, res: Response): Promise<void> {
   const orgId = getOrgId(req);
-  const product = await productsService.updateProduct(req.params.id, req.body, orgId);
+  const product = await productsService.updateProduct(req.params.id, req.body, orgId, req.user?.sub);
   if (!product) {
     res.status(404).json({ error: "Product not found" });
     return;
@@ -89,7 +91,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
 
 export async function deleteProduct(req: Request, res: Response): Promise<void> {
   const orgId = getOrgId(req);
-  const ok = await productsService.deleteProduct(req.params.id, orgId);
+  const ok = await productsService.deleteProduct(req.params.id, orgId, req.user?.sub);
   if (!ok) {
     res.status(404).json({ error: "Product not found" });
     return;

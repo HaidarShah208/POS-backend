@@ -27,6 +27,9 @@ export async function getInventory(req: Request, res: Response): Promise<void> {
     page: query.page,
     limit: query.limit,
     lowStockOnly: query.lowStockOnly,
+    search: (query as Record<string, string>).search,
+    sortBy: (query as Record<string, string>).sortBy,
+    sortOrder: (query as Record<string, string>).sortOrder as "ASC" | "DESC",
   });
   res.json(result);
 }
@@ -58,15 +61,16 @@ export async function adjustStock(req: Request, res: Response): Promise<void> {
       quantity,
       createdById: userId,
       reason,
+      organizationId: req.user?.organizationId,
     });
     res.json(inv);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Adjustment failed";
-    if (message === "Inventory not found for this product and branch") {
+    if (message.includes("not found")) {
       res.status(404).json({ error: message });
       return;
     }
-    if (message === "Insufficient stock") {
+    if (message.includes("Insufficient")) {
       res.status(400).json({ error: message });
       return;
     }

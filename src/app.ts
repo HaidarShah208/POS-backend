@@ -1,11 +1,11 @@
 import "reflect-metadata";
 import express from "express";
 import cors from "cors";
-import helmetModule from "helmet";
-import rateLimitModule from "express-rate-limit";
+import { createRequire } from "module";
 
-const helmet = (helmetModule as unknown as { default: typeof helmetModule }).default ?? helmetModule;
-const rateLimit = (rateLimitModule as unknown as { default: typeof rateLimitModule }).default ?? rateLimitModule;
+const require_ = createRequire(import.meta.url);
+const helmet = require_("helmet") as (options?: Record<string, unknown>) => express.RequestHandler;
+const rateLimit = require_("express-rate-limit") as (options: Record<string, unknown>) => express.RequestHandler;
 import path from "path";
 import fs from "fs/promises";
 import multer from "multer";

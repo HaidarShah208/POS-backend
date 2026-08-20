@@ -1,0 +1,70 @@
+import { Request, Response } from "express";
+import * as svc from "./customers.service.js";
+import { getOrgId } from "../../middlewares/tenant.middleware.js";
+
+export async function getCustomers(req: Request, res: Response): Promise<void> {
+  try {
+    const orgId = getOrgId(req);
+    if (!orgId) { res.status(403).json({ error: "Organization context required" }); return; }
+    const { page, limit, search, status } = req.query;
+    const result = await svc.getCustomers({
+      organizationId: orgId,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      search: search as string | undefined,
+      status: status as string | undefined,
+    });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to fetch customers" });
+  }
+}
+
+export async function getById(req: Request, res: Response): Promise<void> {
+  try {
+    const orgId = getOrgId(req);
+    if (!orgId) { res.status(403).json({ error: "Organization context required" }); return; }
+    const customer = await svc.getById(req.params.id, orgId);
+    if (!customer) { res.status(404).json({ error: "Customer not found" }); return; }
+    res.json(customer);
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to fetch customer" });
+  }
+}
+
+export async function create(req: Request, res: Response): Promise<void> {
+  try {
+    const orgId = getOrgId(req);
+    if (!orgId) { res.status(403).json({ error: "Organization context required" }); return; }
+    const { name } = req.body;
+    if (!name || !name.trim()) { res.status(400).json({ error: "Customer name is required" }); return; }
+    const customer = await svc.create(req.body, orgId);
+    res.status(201).json(customer);
+  } catch (e) {
+    res.status(400).json({ error: e instanceof Error ? e.message : "Failed to create customer" });
+  }
+}
+
+export async function update(req: Request, res: Response): Promise<void> {
+  try {
+    const orgId = getOrgId(req);
+    if (!orgId) { res.status(403).json({ error: "Organization context required" }); return; }
+    const customer = await svc.update(req.params.id, req.body, orgId);
+    if (!customer) { res.status(404).json({ error: "Customer not found" }); return; }
+    res.json(customer);
+  } catch (e) {
+    res.status(400).json({ error: e instanceof Error ? e.message : "Failed to update customer" });
+  }
+}
+
+export async function remove(req: Request, res: Response): Promise<void> {
+  try {
+    const orgId = getOrgId(req);
+    if (!orgId) { res.status(403).json({ error: "Organization context required" }); return; }
+    const deleted = await svc.remove(req.params.id, orgId);
+    if (!deleted) { res.status(404).json({ error: "Customer not found" }); return; }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to delete customer" });
+  }
+}

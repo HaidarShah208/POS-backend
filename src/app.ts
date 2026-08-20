@@ -20,6 +20,9 @@ import { productsRoutes } from "./modules/products/products.routes.js";
 import { ordersRoutes } from "./modules/orders/orders.routes.js";
 import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
 import { adminRoutes } from "./modules/admin/admin.routes.js";
+import { rolesRoutes } from "./modules/roles/roles.routes.js";
+import { customersRoutes } from "./modules/customers/customers.routes.js";
+import { suppliersRoutes } from "./modules/suppliers/suppliers.routes.js";
 
 const app = express();
 
@@ -105,6 +108,9 @@ app.use("/api/products", productsRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/roles", rolesRoutes);
+app.use("/api/customers", customersRoutes);
+app.use("/api/suppliers", suppliersRoutes);
 
 app.post("/api/uploads/logo", authMiddleware, upload.single("logo"), (req, res) => {
   const file = req.file;

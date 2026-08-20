@@ -1,4 +1,4 @@
-export type UserRole = "super_admin" | "owner" | "admin" | "manager" | "cashier" | "kitchen";
+export type UserRole = "super_admin" | "owner" | "admin" | "manager" | "cashier" | "kitchen" | string;
 
 export type OrderType = "dine-in" | "takeaway" | "delivery";
 
@@ -17,9 +17,10 @@ export type KitchenOrderStatus = "NEW" | "PREPARING" | "READY";
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: UserRole;
+  role: string;
   branchId: string;
   organizationId: string | null;
+  permissions?: string[];
   iat?: number;
   exp?: number;
 }

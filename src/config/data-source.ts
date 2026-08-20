@@ -15,6 +15,8 @@ import { OrdersTokenNumber1730090000000 } from "../database/migrations/173009000
 import { MultiTenancy1730100000000 } from "../database/migrations/1730100000000-multi-tenancy.js";
 import { BackfillOrganization1730110000000 } from "../database/migrations/1730110000000-backfill-organization.js";
 import { ScalabilityIndexes1730120000000 } from "../database/migrations/1730120000000-scalability-indexes.js";
+import { Roles1730130000000 } from "../database/migrations/1730130000000-roles.js";
+import { CustomersSuppliers1730140000000 } from "../database/migrations/1730140000000-customers-suppliers.js";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -35,6 +37,8 @@ export const AppDataSource = new DataSource({
     MultiTenancy1730100000000,
     BackfillOrganization1730110000000,
     ScalabilityIndexes1730120000000,
+    Roles1730130000000,
+    CustomersSuppliers1730140000000,
   ],
   migrationsTableName: "migrations",
   subscribers: [],

@@ -1,11 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { IsNull } from "typeorm";
 import { AppDataSource } from "../../config/data-source.js";
 import { Users } from "../../models/Users.js";
 import { Organizations } from "../../models/Organizations.js";
 import { Branches } from "../../models/Branches.js";
 import { Subscriptions } from "../../models/Subscriptions.js";
 import { Plans } from "../../models/Plans.js";
+import { Roles } from "../../models/Roles.js";
 import type { UserRole } from "../../types/index.js";
 import { env } from "../../config/env.js";
 import type { JwtPayload } from "../../types/index.js";
@@ -15,8 +17,18 @@ const orgRepo = () => AppDataSource.getRepository(Organizations);
 const branchRepo = () => AppDataSource.getRepository(Branches);
 const subscriptionRepo = () => AppDataSource.getRepository(Subscriptions);
 const planRepo = () => AppDataSource.getRepository(Plans);
+const roleRepo = () => AppDataSource.getRepository(Roles);
 
 const SALT_ROUNDS = 10;
+
+async function resolvePermissions(roleSlug: string, organizationId: string | null): Promise<string[]> {
+  if (organizationId) {
+    const orgRole = await roleRepo().findOne({ where: { slug: roleSlug, organizationId } });
+    if (orgRole) return orgRole.permissions;
+  }
+  const systemRole = await roleRepo().findOne({ where: { slug: roleSlug, organizationId: IsNull(), isSystem: true } });
+  return systemRole?.permissions ?? [];
+}
 
 export interface AuthUserResponse {
   id: string;
@@ -30,6 +42,7 @@ export interface AuthUserResponse {
 export interface LoginResult {
   user: AuthUserResponse;
   token: string;
+  permissions: string[];
   subscription?: {
     status: string;
     planSlug: string;
@@ -50,19 +63,29 @@ export async function register(
   name: string,
   email: string,
   password: string,
-  role: UserRole,
+  role: string,
   branchId: string,
   organizationId?: string
 ): Promise<AuthUserResponse> {
   const existing = await userRepo().findOne({ where: { email: email.toLowerCase() } });
   if (existing) throw new Error("Email already registered");
 
+  const resolvedRole = await roleRepo().findOne({
+    where: organizationId
+      ? [
+          { slug: role, organizationId },
+          { slug: role, organizationId: IsNull(), isSystem: true },
+        ]
+      : { slug: role, organizationId: IsNull(), isSystem: true },
+  });
+  if (!resolvedRole) throw new Error("Invalid role");
+
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const user = userRepo().create({
     name,
     email: email.toLowerCase(),
     passwordHash,
-    role,
+    role: resolvedRole.slug,
     branchId,
     organizationId: organizationId || null,
   });
@@ -127,18 +150,22 @@ export async function registerOrganization(input: RegisterOrgInput): Promise<Log
     });
     await manager.save(subscription);
 
+    const ownerPermissions = await resolvePermissions("owner", org.id);
+
     const payload: JwtPayload = {
       sub: owner.id,
       email: owner.email,
       role: owner.role as UserRole,
       branchId: branch.id,
       organizationId: org.id,
+      permissions: ownerPermissions,
     };
     const token = signToken(payload);
 
     return {
       user: toAuthUser(owner),
       token,
+      permissions: ownerPermissions,
       subscription: {
         status: subscription.status,
         planSlug: trialPlan.slug,
@@ -158,16 +185,17 @@ export async function login(email: string, password: string): Promise<LoginResul
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new Error("Invalid email or password");
 
+  const permissions = await resolvePermissions(user.role, user.organizationId);
+
   const payload: JwtPayload = {
     sub: user.id,
     email: user.email,
     role: user.role as UserRole,
     branchId: user.branchId,
     organizationId: user.organizationId,
+    permissions,
   };
-  const token = jwt.sign(payload, env.jwtSecret, {
-    expiresIn: env.jwtExpiresIn as jwt.SignOptions["expiresIn"],
-  });
+  const token = signToken(payload);
 
   let subscription: LoginResult["subscription"];
   if (user.organizationId) {
@@ -185,7 +213,7 @@ export async function login(email: string, password: string): Promise<LoginResul
     }
   }
 
-  return { user: toAuthUser(user), token, subscription };
+  return { user: toAuthUser(user), token, permissions, subscription };
 }
 
 export function signToken(payload: JwtPayload): string {

@@ -10,6 +10,9 @@ import { OrderItems } from "../models/OrderItems.js";
 import { Inventory } from "../models/Inventory.js";
 import { StockAdjustments } from "../models/StockAdjustments.js";
 import { AuditLogs } from "../models/AuditLogs.js";
+import { Roles } from "../models/Roles.js";
+import { Customers } from "../models/Customers.js";
+import { Suppliers } from "../models/Suppliers.js";
 
 export const entities = [
   Organizations,
@@ -24,4 +27,7 @@ export const entities = [
   Inventory,
   StockAdjustments,
   AuditLogs,
+  Roles,
+  Customers,
+  Suppliers,
 ];

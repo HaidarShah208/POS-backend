@@ -6,7 +6,9 @@ import { requireAdmin } from "../../middlewares/requireRole.middleware.js";
 const router = Router();
 router.use(authMiddleware);
 
+router.get("/", requireAdmin, usersController.getAll);
 router.get("/branch/:branchId", requireAdmin, usersController.getByBranch);
 router.get("/:id", usersController.getById);
+router.delete("/:id", requireAdmin, usersController.deleteUser);
 
 export const usersRoutes = router;

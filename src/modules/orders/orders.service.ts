@@ -84,7 +84,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       .where("o.branch_id = :branchId", { branchId })
       .andWhere("o.created_at >= :start", { start: startOfDay })
       .andWhere("o.created_at < :end", { end: endOfDay })
-      .orderBy("o.created_at", "DESC")
+      .orderBy("o.createdAt", "DESC")
       .select(["o.tokenNumber"])
       .getOne();
 
@@ -174,10 +174,10 @@ export interface PaginatedOrdersResult {
 
 const ALLOWED_ORDER_SORTS = new Set(["createdAt", "grandTotal", "status", "orderType"]);
 const SORT_COLUMN_MAP: Record<string, string> = {
-  createdAt: "o.created_at",
-  grandTotal: "o.grand_total",
+  createdAt: "o.createdAt",
+  grandTotal: "o.grandTotal",
   status: "o.status",
-  orderType: "o.order_type",
+  orderType: "o.orderType",
 };
 
 export async function getOrders(params: GetOrdersParams = {}): Promise<PaginatedOrdersResult> {
@@ -218,7 +218,7 @@ export async function getOrders(params: GetOrdersParams = {}): Promise<Paginated
     });
   }
 
-  const sortCol = ALLOWED_ORDER_SORTS.has(sortBy) ? SORT_COLUMN_MAP[sortBy] : "o.created_at";
+  const sortCol = ALLOWED_ORDER_SORTS.has(sortBy) ? SORT_COLUMN_MAP[sortBy] : "o.createdAt";
   const direction = sortOrder === "ASC" ? "ASC" : "DESC";
   qb.orderBy(sortCol, direction).skip(skip).take(limit);
 
@@ -260,7 +260,7 @@ export async function getKitchenOrders(branchId: string, organizationId?: string
     .leftJoinAndSelect("o.items", "items")
     .where("o.branch_id = :branchId", { branchId })
     .andWhere("o.kitchen_status IN (:...statuses)", { statuses: ["NEW", "PREPARING"] })
-    .orderBy("o.created_at", "ASC")
+    .orderBy("o.createdAt", "ASC")
     .take(100);
 
   if (organizationId) {

@@ -85,7 +85,7 @@ const ALLOWED_PRODUCT_SORTS = new Set(["name", "price", "createdAt", "status"]);
 const PRODUCT_SORT_MAP: Record<string, string> = {
   name: "p.name",
   price: "p.price",
-  createdAt: "p.created_at",
+  createdAt: "p.createdAt",
   status: "p.status",
 };
 

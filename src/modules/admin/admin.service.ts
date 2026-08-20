@@ -67,7 +67,7 @@ export async function getOrganizations(params: GetOrganizationsParams = {}) {
       "sub.organization_id = org.id"
     )
     .leftJoinAndSelect("sub.plan", "plan")
-    .orderBy("org.created_at", "DESC");
+    .orderBy("org.createdAt", "DESC");
 
   if (status) {
     qb.andWhere("org.status = :status", { status });

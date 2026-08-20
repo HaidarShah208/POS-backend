@@ -26,8 +26,8 @@ export interface PaginatedInventoryResult {
 const ALLOWED_INV_SORTS = new Set(["productName", "currentStock", "updatedAt"]);
 const INV_SORT_MAP: Record<string, string> = {
   productName: "product.name",
-  currentStock: "inv.current_stock",
-  updatedAt: "inv.updated_at",
+  currentStock: "inv.currentStock",
+  updatedAt: "inv.updatedAt",
 };
 
 export async function getInventory(

@@ -34,6 +34,15 @@ export async function getOrganizationById(req: Request, res: Response): Promise<
   res.json(org);
 }
 
+export async function getOrganizationPayments(req: Request, res: Response): Promise<void> {
+  try {
+    const payments = await adminService.getOrganizationPayments(req.params.id);
+    res.json(payments);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch organization payments" });
+  }
+}
+
 export async function updateOrganization(req: Request, res: Response): Promise<void> {
   const org = await adminService.updateOrganization(req.params.id, req.body, req.user?.sub);
   if (!org) {

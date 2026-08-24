@@ -152,6 +152,17 @@ export async function updateOrganizationStatus(id: string, status: OrganizationS
   return saved;
 }
 
+export async function getOrganizationPayments(orgId: string) {
+  const payRepo = AppDataSource.getRepository(
+    (await import("../../models/PaymentSubmissions.js")).PaymentSubmissions
+  );
+  return payRepo.find({
+    where: { organizationId: orgId },
+    relations: ["plan"],
+    order: { createdAt: "DESC" },
+  });
+}
+
 export async function updateOrganization(
   id: string,
   data: Partial<{ name: string; phone: string; email: string; address: string; status: OrganizationStatus }>,

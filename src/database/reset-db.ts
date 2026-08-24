@@ -6,6 +6,7 @@ import { Users } from "../models/Users.js";
 import { Branches } from "../models/Branches.js";
 import { Plans } from "../models/Plans.js";
 import type { UserRole } from "../types/index.js";
+import type { PlanSlug } from "../models/Plans.js";
 
 const SALT_ROUNDS = 10;
 
@@ -46,7 +47,7 @@ async function reset() {
   await userRepo.save(superAdmin);
   console.log("Created super admin: superadmin@pos.com / superadmin123");
 
-  const defaultPlans = [
+  const defaultPlans: { name: string; slug: PlanSlug; price: number; features: Record<string, unknown>; limits: Record<string, number>; active: boolean }[] = [
     { name: "Free Trial", slug: "free_trial", price: 0, features: { list: ["14-day free trial", "All features included", "No credit card required"] }, limits: { branches: 1, users: 5 }, active: true },
     { name: "Starter", slug: "starter", price: 49.99, features: { list: ["Up to 1 branch", "Up to 5 staff members", "Basic POS features", "Email support"] }, limits: { branches: 1, users: 5 }, active: true },
     { name: "Professional", slug: "professional", price: 79.99, features: { list: ["Up to 3 branches", "Up to 15 staff members", "Full POS + Kitchen Display", "Inventory management", "Priority support"] }, limits: { branches: 3, users: 15 }, active: true },

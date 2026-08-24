@@ -21,8 +21,10 @@ import { ordersRoutes } from "./modules/orders/orders.routes.js";
 import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
 import { adminRoutes } from "./modules/admin/admin.routes.js";
 import { rolesRoutes } from "./modules/roles/roles.routes.js";
-import { customersRoutes } from "./modules/customers/customers.routes.js";
 import { suppliersRoutes } from "./modules/suppliers/suppliers.routes.js";
+import { recipesRoutes } from "./modules/recipes/recipes.routes.js";
+import { purchaseOrdersRoutes } from "./modules/purchase-orders/purchase-orders.routes.js";
+import { subscriptionRoutes } from "./modules/subscriptions/subscriptions.routes.js";
 
 const app = express();
 
@@ -75,6 +77,7 @@ app.use(async (_req, _res, next) => {
 
 const UPLOADS_ROOT = path.join(process.cwd(), "uploads");
 const LOGO_DIR = path.join(UPLOADS_ROOT, "logo");
+const RECEIPTS_DIR = path.join(UPLOADS_ROOT, "receipts");
 
 function isSafeLogoFilename(name: string): boolean {
   if (!name || name.length > 200) return false;
@@ -107,10 +110,12 @@ app.use("/api/branches", branchesRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/recipes", recipesRoutes);
+app.use("/api/purchase-orders", purchaseOrdersRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/roles", rolesRoutes);
-app.use("/api/customers", customersRoutes);
 app.use("/api/suppliers", suppliersRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 app.post("/api/uploads/logo", authMiddleware, upload.single("logo"), (req, res) => {
   const file = req.file;
@@ -131,6 +136,20 @@ app.get("/api/files/logo/:filename", (req, res) => {
   res.sendFile(filePath, { maxAge: "1d" }, (err) => {
     if (err) {
       if (!res.headersSent) res.status(404).json({ error: "Logo not found" });
+    }
+  });
+});
+
+app.get("/api/files/receipt/:filename", (req, res) => {
+  const { filename } = req.params;
+  if (!isSafeLogoFilename(filename)) {
+    res.status(400).json({ error: "Invalid filename" });
+    return;
+  }
+  const filePath = path.resolve(RECEIPTS_DIR, filename);
+  res.sendFile(filePath, { maxAge: "1d" }, (err) => {
+    if (err) {
+      if (!res.headersSent) res.status(404).json({ error: "Receipt not found" });
     }
   });
 });

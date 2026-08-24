@@ -14,7 +14,8 @@ export type SubscriptionStatus =
   | "past_due"
   | "cancelled"
   | "expired"
-  | "suspended";
+  | "suspended"
+  | "pending_verification";
 
 @Entity("subscriptions")
 export class Subscriptions {

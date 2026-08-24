@@ -17,6 +17,9 @@ import { BackfillOrganization1730110000000 } from "../database/migrations/173011
 import { ScalabilityIndexes1730120000000 } from "../database/migrations/1730120000000-scalability-indexes.js";
 import { Roles1730130000000 } from "../database/migrations/1730130000000-roles.js";
 import { CustomersSuppliers1730140000000 } from "../database/migrations/1730140000000-customers-suppliers.js";
+import { InventorySystem1730150000000 } from "../database/migrations/1730150000000-inventory-system.js";
+import { PurchaseOrders1730160000000 } from "../database/migrations/1730160000000-purchase-orders.js";
+import { PaymentSubmissions1730170000000 } from "../database/migrations/1730170000000-payment-submissions.js";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -39,6 +42,9 @@ export const AppDataSource = new DataSource({
     ScalabilityIndexes1730120000000,
     Roles1730130000000,
     CustomersSuppliers1730140000000,
+    InventorySystem1730150000000,
+    PurchaseOrders1730160000000,
+    PaymentSubmissions1730170000000,
   ],
   migrationsTableName: "migrations",
   subscribers: [],

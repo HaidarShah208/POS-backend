@@ -2,8 +2,13 @@ import { AppDataSource } from "../../config/data-source.js";
 import { Orders } from "../../models/Orders.js";
 import { OrderItems } from "../../models/OrderItems.js";
 import { Inventory } from "../../models/Inventory.js";
+import { InventoryItems } from "../../models/InventoryItems.js";
+import { StockMovements } from "../../models/StockMovements.js";
+import { Recipes } from "../../models/Recipes.js";
+import { RecipeIngredients } from "../../models/RecipeIngredients.js";
 import { logAudit } from "../../services/audit.service.js";
 import type { OrderType, PaymentMethod, OrderStatus } from "../../types/index.js";
+import type { EntityManager } from "typeorm";
 
 const orderRepo = () => AppDataSource.getRepository(Orders);
 
@@ -25,6 +30,165 @@ const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   completed: [],
   cancelled: [],
 };
+
+function recalculateStatus(currentQuantity: number, minimumQuantity: number): "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" {
+  if (currentQuantity <= 0) return "OUT_OF_STOCK";
+  if (currentQuantity <= minimumQuantity) return "LOW_STOCK";
+  return "IN_STOCK";
+}
+
+async function deductNewInventoryForOrder(
+  manager: EntityManager,
+  orderId: string,
+  organizationId: string,
+  userId: string | null,
+  items: { productId: string; quantity: number; name: string }[]
+) {
+  const movementRepo = manager.getRepository(StockMovements);
+
+  const existingMovements = await movementRepo.findOne({
+    where: { referenceType: "ORDER", referenceId: orderId, organizationId },
+  });
+  if (existingMovements) return;
+
+  const itemRepo = manager.getRepository(InventoryItems);
+
+  for (const orderItem of items) {
+    const recipe = await manager.getRepository(Recipes).findOne({
+      where: { productId: orderItem.productId, organizationId, isActive: true },
+    });
+
+    if (recipe) {
+      const recipeIngredients = await manager.getRepository(RecipeIngredients).find({
+        where: { recipeId: recipe.id },
+      });
+
+      for (const ri of recipeIngredients) {
+        const deductQty = Number(ri.quantity) * orderItem.quantity;
+
+        const rows = await manager.query(
+          `SELECT id, current_quantity, minimum_quantity FROM inventory_items WHERE id = $1 AND organization_id = $2 FOR UPDATE`,
+          [ri.inventoryItemId, organizationId]
+        );
+
+        if (rows.length === 0) continue;
+
+        const row = rows[0];
+        const prevQty = Number(row.current_quantity);
+        const newQty = Math.max(prevQty - deductQty, 0);
+        const newStatus = recalculateStatus(newQty, Number(row.minimum_quantity));
+
+        await manager.query(
+          `UPDATE inventory_items SET current_quantity = $1, status = $2, updated_at = now() WHERE id = $3`,
+          [newQty, newStatus, ri.inventoryItemId]
+        );
+
+        await movementRepo.save(movementRepo.create({
+          organizationId,
+          inventoryItemId: ri.inventoryItemId,
+          type: "RECIPE_DEDUCTION",
+          quantity: -deductQty,
+          previousQuantity: prevQty,
+          newQuantity: newQty,
+          reason: `Recipe deduction for ${orderItem.name} x${orderItem.quantity}`,
+          referenceType: "ORDER",
+          referenceId: orderId,
+          performedById: userId,
+        }));
+      }
+    } else {
+      const invItem = await itemRepo.findOne({
+        where: { productId: orderItem.productId, organizationId },
+      });
+
+      if (!invItem || !invItem.trackInventory) continue;
+
+      const rows = await manager.query(
+        `SELECT id, current_quantity, minimum_quantity FROM inventory_items WHERE id = $1 AND organization_id = $2 FOR UPDATE`,
+        [invItem.id, organizationId]
+      );
+
+      if (rows.length === 0) continue;
+
+      const row = rows[0];
+      const prevQty = Number(row.current_quantity);
+      const newQty = Math.max(prevQty - orderItem.quantity, 0);
+      const newStatus = recalculateStatus(newQty, Number(row.minimum_quantity));
+
+      await manager.query(
+        `UPDATE inventory_items SET current_quantity = $1, status = $2, updated_at = now() WHERE id = $3`,
+        [newQty, newStatus, invItem.id]
+      );
+
+      await movementRepo.save(movementRepo.create({
+        organizationId,
+        inventoryItemId: invItem.id,
+        type: "SALE",
+        quantity: -orderItem.quantity,
+        previousQuantity: prevQty,
+        newQuantity: newQty,
+        reason: `Sale: ${orderItem.name} x${orderItem.quantity}`,
+        referenceType: "ORDER",
+        referenceId: orderId,
+        performedById: userId,
+      }));
+    }
+  }
+}
+
+async function restoreInventoryForOrder(
+  manager: EntityManager,
+  orderId: string,
+  organizationId: string,
+  userId: string | null
+) {
+  const movementRepo = manager.getRepository(StockMovements);
+
+  const existingReturn = await movementRepo.findOne({
+    where: { referenceType: "ORDER", referenceId: orderId, organizationId, type: "RETURN" },
+  });
+  if (existingReturn) return;
+
+  const saleMovements = await movementRepo.find({
+    where: { referenceType: "ORDER", referenceId: orderId, organizationId },
+  });
+
+  if (saleMovements.length === 0) return;
+
+  for (const sm of saleMovements) {
+    const absQty = Math.abs(Number(sm.quantity));
+
+    const rows = await manager.query(
+      `SELECT id, current_quantity, minimum_quantity FROM inventory_items WHERE id = $1 AND organization_id = $2 FOR UPDATE`,
+      [sm.inventoryItemId, organizationId]
+    );
+
+    if (rows.length === 0) continue;
+
+    const row = rows[0];
+    const prevQty = Number(row.current_quantity);
+    const newQty = prevQty + absQty;
+    const newStatus = recalculateStatus(newQty, Number(row.minimum_quantity));
+
+    await manager.query(
+      `UPDATE inventory_items SET current_quantity = $1, status = $2, updated_at = now() WHERE id = $3`,
+      [newQty, newStatus, sm.inventoryItemId]
+    );
+
+    await movementRepo.save(movementRepo.create({
+      organizationId,
+      inventoryItemId: sm.inventoryItemId,
+      type: "RETURN",
+      quantity: absQty,
+      previousQuantity: prevQty,
+      newQuantity: newQty,
+      reason: `Order cancelled - stock restored`,
+      referenceType: "ORDER",
+      referenceId: orderId,
+      performedById: userId,
+    }));
+  }
+}
 
 export interface PlaceOrderInput {
   branchId: string;
@@ -137,6 +301,16 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       })
     );
     await itemRepository.save(orderItems);
+
+    if (organizationId) {
+      await deductNewInventoryForOrder(
+        manager,
+        order.id,
+        organizationId,
+        userId ?? null,
+        items.map((it) => ({ productId: it.productId, quantity: it.quantity, name: it.name }))
+      );
+    }
 
     logAudit({
       organizationId,
@@ -287,6 +461,30 @@ export async function updateOrderStatus(
       ok: false,
       error: `Cannot transition from ${order.status} to ${newStatus}`,
     };
+  }
+
+  if (newStatus === "cancelled" && organizationId) {
+    await AppDataSource.transaction(async (manager) => {
+      await restoreInventoryForOrder(manager, orderId, organizationId, actorId ?? null);
+
+      const o = await manager.getRepository(Orders).findOne({ where: { id: orderId } });
+      if (o) {
+        o.status = "cancelled";
+        o.kitchenStatus = "READY";
+        await manager.getRepository(Orders).save(o);
+      }
+    });
+
+    logAudit({
+      organizationId,
+      actorId,
+      action: "order.cancelled",
+      resource: "order",
+      resourceId: orderId,
+      meta: { previousStatus: order.status },
+    });
+
+    return { ok: true };
   }
 
   order.status = newStatus;

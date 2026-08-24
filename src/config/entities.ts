@@ -11,8 +11,15 @@ import { Inventory } from "../models/Inventory.js";
 import { StockAdjustments } from "../models/StockAdjustments.js";
 import { AuditLogs } from "../models/AuditLogs.js";
 import { Roles } from "../models/Roles.js";
-import { Customers } from "../models/Customers.js";
 import { Suppliers } from "../models/Suppliers.js";
+import { InventoryItems } from "../models/InventoryItems.js";
+import { StockMovements } from "../models/StockMovements.js";
+import { Recipes } from "../models/Recipes.js";
+import { RecipeIngredients } from "../models/RecipeIngredients.js";
+import { WasteRecords } from "../models/WasteRecords.js";
+import { PurchaseOrders } from "../models/PurchaseOrders.js";
+import { PurchaseOrderItems } from "../models/PurchaseOrderItems.js";
+import { PaymentSubmissions } from "../models/PaymentSubmissions.js";
 
 export const entities = [
   Organizations,
@@ -28,6 +35,13 @@ export const entities = [
   StockAdjustments,
   AuditLogs,
   Roles,
-  Customers,
   Suppliers,
+  InventoryItems,
+  StockMovements,
+  Recipes,
+  RecipeIngredients,
+  WasteRecords,
+  PurchaseOrders,
+  PurchaseOrderItems,
+  PaymentSubmissions,
 ];

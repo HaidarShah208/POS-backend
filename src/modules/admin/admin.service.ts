@@ -132,6 +132,22 @@ export async function updateOrganizationStatus(id: string, status: OrganizationS
   const previous = org.status;
   org.status = status;
   const saved = await orgRepo().save(org);
+
+  if (status === "active") {
+    const sub = await subRepo().findOne({ where: { organizationId: id }, order: { createdAt: "DESC" } });
+    if (sub && sub.status !== "active") {
+      sub.status = "active";
+      sub.startsAt = new Date();
+      await subRepo().save(sub);
+    }
+  } else if (status === "suspended") {
+    const sub = await subRepo().findOne({ where: { organizationId: id }, order: { createdAt: "DESC" } });
+    if (sub && sub.status !== "suspended") {
+      sub.status = "suspended";
+      await subRepo().save(sub);
+    }
+  }
+
   logAudit({ actorId, action: "organization.status_changed", resource: "organization", resourceId: id, meta: { from: previous, to: status } });
   return saved;
 }

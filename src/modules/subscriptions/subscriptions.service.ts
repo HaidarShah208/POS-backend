@@ -99,7 +99,7 @@ export async function getAllPayments(params: GetAllPaymentsParams) {
 
 export async function approvePayment(paymentId: string, actorId: string) {
   return AppDataSource.transaction(async (manager) => {
-    const payment = await manager.findOne(PaymentSubmissions, { where: { id: paymentId } });
+    const payment = await manager.findOne(PaymentSubmissions, { where: { id: paymentId }, relations: ["plan"] });
     if (!payment) return null;
 
     payment.status = "APPROVED";
@@ -107,10 +107,14 @@ export async function approvePayment(paymentId: string, actorId: string) {
     payment.reviewedAt = new Date();
     await manager.save(payment);
 
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+
     await manager.update(
       Subscriptions,
       { organizationId: payment.organizationId },
-      { status: "active", startsAt: new Date() }
+      { status: "active", planId: payment.planId, startsAt: now, expiresAt, trialEndsAt: null }
     );
 
     await manager.update(
@@ -125,6 +129,7 @@ export async function approvePayment(paymentId: string, actorId: string) {
       action: "payment.approved",
       resource: "payment_submission",
       resourceId: paymentId,
+      meta: { planId: payment.planId, planName: payment.plan?.name },
     });
 
     return payment;

@@ -36,7 +36,7 @@ router.use(authMiddleware);
 
 router.get("/plans", ctrl.getPlans);
 router.get("/my-status", ctrl.getMySubscription);
-router.post("/submit-payment", receiptUpload.single("receiptImage"), ctrl.submitPayment);
+router.post("/submit-payment", receiptUpload.single("receipt"), ctrl.submitPayment);
 router.get("/payment-status", ctrl.getPaymentStatus);
 
 router.get("/admin/payments", requireRole("super_admin"), ctrl.getAllPayments);

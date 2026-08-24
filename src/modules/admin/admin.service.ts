@@ -61,7 +61,7 @@ export async function getOrganizations(params: GetOrganizationsParams = {}) {
     .createQueryBuilder("org")
     .loadRelationCountAndMap("org.userCount", "org.users")
     .leftJoinAndMapOne(
-      "org.latestSubscription",
+      "org.subscription",
       Subscriptions,
       "sub",
       "sub.organization_id = org.id"

@@ -5,7 +5,6 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { PurchaseOrders } from "./PurchaseOrders.js";
 
 @Entity("purchase_order_items")
 export class PurchaseOrderItems {
@@ -30,9 +29,9 @@ export class PurchaseOrderItems {
   @Column({ type: "decimal", precision: 12, scale: 2, name: "total_cost", default: 0 })
   totalCost!: number;
 
-  @ManyToOne(() => PurchaseOrders, "items", { onDelete: "CASCADE" })
+  @ManyToOne("PurchaseOrders", "items", { onDelete: "CASCADE" })
   @JoinColumn({ name: "purchase_order_id" })
-  purchaseOrder!: PurchaseOrders;
+  purchaseOrder!: import("./PurchaseOrders.js").PurchaseOrders;
 
   @ManyToOne("InventoryItems", undefined, { onDelete: "CASCADE" })
   @JoinColumn({ name: "inventory_item_id" })

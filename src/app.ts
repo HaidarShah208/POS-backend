@@ -4,8 +4,8 @@ import cors from "cors";
 import { createRequire } from "module";
 
 const require_ = createRequire(import.meta.url);
-const helmet = require_("helmet") as (options?: Record<string, unknown>) => express.RequestHandler;
-const rateLimit = require_("express-rate-limit") as (options: Record<string, unknown>) => express.RequestHandler;
+const helmet = require_("helmet") as unknown as (options?: Record<string, unknown>) => express.RequestHandler;
+const rateLimit = require_("express-rate-limit") as unknown as (options: Record<string, unknown>) => express.RequestHandler;
 import path from "path";
 import fs from "fs/promises";
 import multer from "multer";

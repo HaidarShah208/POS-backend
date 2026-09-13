@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as svc from "./subscriptions.service.js";
 import { getOrgId } from "../../middlewares/tenant.middleware.js";
+import { uploadPublicFile } from "../../lib/supabaseStorage.js";
 
 export async function getPlans(_req: Request, res: Response): Promise<void> {
   try {
@@ -43,7 +44,7 @@ export async function submitPayment(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const receiptImage = req.file?.filename ?? undefined;
+    const receiptImage = req.file ? await uploadPublicFile("receipts", req.file) : undefined;
 
     const payment = await svc.submitPayment(
       { planId, amount: Number(amount), paymentMethod, accountTitle, transactionId, receiptImage },

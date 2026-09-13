@@ -39,6 +39,10 @@ export const env = {
   jwtExpiresIn: optional("JWT_EXPIRES_IN", "7d"),
   CORS_ORIGIN: optionalList("CORS_ORIGIN", ["http://localhost:3001"]),
 
+  supabaseUrl: optional("SUPABASE_URL", ""),
+  supabaseServiceRoleKey: optional("SUPABASE_SERVICE_ROLE_KEY", ""),
+  supabaseStorageBucket: optional("SUPABASE_STORAGE_BUCKET", "uploads"),
+
   dbPoolMax: optionalInt("DB_POOL_MAX", 20),
   dbPoolMin: optionalInt("DB_POOL_MIN", 2),
   dbConnectionTimeout: optionalInt("DB_CONNECTION_TIMEOUT", 10000),

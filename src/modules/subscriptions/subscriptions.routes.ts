@@ -1,28 +1,11 @@
 import { Router } from "express";
-import path from "path";
-import fs from "fs/promises";
 import multer from "multer";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { requireRole } from "../../middlewares/requireRole.middleware.js";
 import * as ctrl from "./subscriptions.controller.js";
 
-const RECEIPTS_DIR = path.join(process.cwd(), "uploads", "receipts");
-
-const receiptStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    fs.mkdir(RECEIPTS_DIR, { recursive: true })
-      .then(() => cb(null, RECEIPTS_DIR))
-      .catch((err) => cb(err as Error, ""));
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".png";
-    const safeExt = /^\.[a-zA-Z0-9]+$/.test(ext) ? ext : ".png";
-    cb(null, `receipt-${Date.now()}${safeExt}`);
-  },
-});
-
 const receiptUpload = multer({
-  storage: receiptStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = /^image\/(jpeg|png|gif|webp)$/i.test(file.mimetype);

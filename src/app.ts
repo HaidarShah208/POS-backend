@@ -7,11 +7,11 @@ const require_ = createRequire(import.meta.url);
 const helmet = require_("helmet") as unknown as (options?: Record<string, unknown>) => express.RequestHandler;
 const rateLimit = require_("express-rate-limit") as unknown as (options: Record<string, unknown>) => express.RequestHandler;
 import path from "path";
-import fs from "fs/promises";
 import multer from "multer";
 import { env } from "./config/env.js";
 import { ensureDataSource } from "./config/init-db.js";
 import { AppDataSource } from "./config/data-source.js";
+import { uploadPublicFile } from "./lib/supabaseStorage.js";
 import { authMiddleware } from "./middlewares/auth.middleware.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { usersRoutes } from "./modules/users/users.routes.js";
@@ -86,18 +86,8 @@ function isSafeLogoFilename(name: string): boolean {
   return /^[a-zA-Z0-9._-]+$/.test(name);
 }
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    fs.mkdir(LOGO_DIR, { recursive: true }).then(() => cb(null, LOGO_DIR)).catch((err) => cb(err as Error, ""));
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".png";
-    const safeExt = /^.[a-zA-Z0-9]+$/.test(ext) ? ext : ".png";
-    cb(null, `logo-${Date.now()}${safeExt}`);
-  },
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = /^image\/(jpeg|png|gif|webp)$/i.test(file.mimetype);
@@ -118,13 +108,18 @@ app.use("/api/roles", rolesRoutes);
 app.use("/api/suppliers", suppliersRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 
-app.post("/api/uploads/logo", authMiddleware, upload.single("logo"), (req, res) => {
+app.post("/api/uploads/logo", authMiddleware, upload.single("logo"), async (req, res) => {
   const file = req.file;
   if (!file) {
     res.status(400).json({ error: "Logo file is required (multipart field: logo)" });
     return;
   }
-  res.json({ filename: file.filename });
+  try {
+    const url = await uploadPublicFile("logos", file);
+    res.json({ url });
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to upload logo" });
+  }
 });
 
 app.get("/api/files/logo/:filename", (req, res) => {
@@ -177,9 +172,7 @@ app.use((err: Error & { code?: string }, _req: express.Request, res: express.Res
     res.status(413).json({ error: "Max file size is 2MB" });
     return;
   }
-  if (process.env.NODE_ENV !== "production") {
-    console.error(err.stack || err.message);
-  }
+  console.error(err.stack || err.message);
   res.status(500).json({ error: "Internal server error" });
 });
 
